@@ -3,8 +3,9 @@
 > **NSA Senior Design Project | Prairie View A&M University | Spring 2026**  
 > A cloud-based security platform for safely analyzing suspicious email attachments without exposing users to malware.
 
-[![Project Status](https://img.shields.io/badge/Status-In%20Development-yellow)](https://github.com/your-username/malicious-file-analyzer)
-[![GitHub last commit](https://img.shields.io/github/last-commit/your-username/malicious-file-analyzer)](https://github.com/your-username/malicious-file-analyzer/commits/main)
+[![Project Status](https://img.shields.io/badge/Status-Week%201%20In%20Progress-yellow)](https://github.com/Karri53/malicious-file-analyzer)
+[![Timeline](https://img.shields.io/badge/Timeline-7%20Weeks%20(Mar%202--Apr%2017)-blue)](https://github.com/Karri53/malicious-file-analyzer)
+[![Team](https://img.shields.io/badge/Team-Team%20Opulence-purple)](https://github.com/Karri53/malicious-file-analyzer)
 
 ---
 
@@ -15,12 +16,12 @@
 - [Our Solution](#our-solution)
 - [Features](#features)
 - [Technology Stack](#technology-stack)
-- [Architecture](#architecture)
+- [7-Week Timeline](#7-week-timeline)
+- [Current Progress](#current-progress)
 - [Project Structure](#project-structure)
-- [Development Status](#development-status)
 - [Getting Started](#getting-started)
+- [Weekly Goals](#weekly-goals)
 - [Documentation](#documentation)
-- [License](#license)
 
 ---
 
@@ -30,10 +31,9 @@ This project addresses a critical cybersecurity challenge: **how can users safel
 
 Built in partnership with the **National Security Agency (NSA)**, this web-based platform enables users to forward suspicious emails, paste file URLs, or upload documents for automated security analysis. All file processing occurs server-side using AWS infrastructure, ensuring zero risk to end users.
 
-**Project Timeline:** 13 weeks (January 2026 - May 2026)  
-**Current Phase:** Week 1 - Foundation & Setup
-
-> ⚠️ **Note:** This repository is actively updated as development progresses. Check commit history for latest changes.
+**Project Duration:** 7 weeks (March 2 - April 17, 2026)  
+**Current Status:** Week 1 - Foundation & Setup  
+**Completion:** 14% (Day 1/49 complete)
 
 ---
 
@@ -41,16 +41,20 @@ Built in partnership with the **National Security Agency (NSA)**, this web-based
 
 **Team Opulence**
 
-| Role | Name | Responsibilities |
-|------|------|-----------------|
-| **Project Lead** | Karrington Hall | Architecture design, AWS/Snowflake integration, team coordination |
-| **UI Developer** | Kendall Brown | React frontend, user experience, responsive design |
-| **RegEx & Data Evaluator** | LeMikkos Starks | Pattern matching, indicator extraction, scoring algorithms |
-| **Backend Developer** | Brandon Nobles | Flask API, file processing, database integration |
+| Role | Name | Responsibilities | GitHub |
+|------|------|-----------------|--------|
+| **Project Lead** | Karrington Hall | Architecture design, AWS/Snowflake integration, team coordination, majority of implementation | [@Karri53](https://github.com/Karri53) |
+| **UI Developer** | Kendall Brown | React frontend, user experience, responsive design | [@kbrownpv](https://github.com/kbrownpv) |
+| **RegEx & Data Evaluator** | LeMikkos Starks | Pattern matching, indicator extraction, scoring algorithms | [@lstarks1513](https://github.com/lstarks1513) |
+| **Backend Developer** | Brandon Nobles | Flask API support, file processing, database integration | [@BRegardQ](https://github.com/BRegardQ) |
 
 **Faculty Advisor:** Dr. Nourshin Ghaffari  
-**NSA Liaison:** Dr. Gregory Stevenson
+
+**NSA Liaison:** Dr. Gregory Stevenson 
+
 **NSA Software Engineer:** Mr. Andrew Hutton
+
+**Snowflake Liaison:** Mr. Jonathan Martindale
 
 ---
 
@@ -63,9 +67,9 @@ Built in partnership with the **National Security Agency (NSA)**, this web-based
 - Non-technical users can't assess file safety
 
 **Real-World Impact:**
-- 94% of malware is delivered via email attachments *(Verizon DBIR 2023)*
-- Average ransomware attack costs $4.54M *(IBM Security)*
-- Phishing emails increased 61% in 2023 *(Cloudflare)*
+- **94%** of malware is delivered via email attachments *(Verizon DBIR 2023)*
+- Average ransomware attack costs **$4.54M** *(IBM Security)*
+- Phishing emails increased **61%** in 2023 *(Cloudflare)*
 
 ---
 
@@ -99,28 +103,34 @@ User uploads file → Processed server-side
 Results shown on dashboard
 ```
 
-**All methods use static analysis** (reading files, not executing them) per NSA security guidance.
+**All methods use static analysis** (reading files, not executing them) per NSA security guidance from Dr. Stevenson.
 
 ---
 
 ## 🚀 Features
 
-### Current Features (MVP)
+### Core Features (MVP - Weeks 1-4)
 - ✅ Multi-method file submission (email/URL/upload)
 - ✅ Static file analysis for PDFs, Word docs, PNG/JPG images
 - ✅ Automated indicator extraction (URLs, IPs, emails, hashes, crypto addresses)
 - ✅ Malicious scoring algorithm (0.0 - 1.0 scale)
 - ✅ Severity classification (Low/Moderate/High)
+- ✅ Results display with detailed explanations
 - ✅ CSV export of findings
-- ✅ Historical scan tracking
+- ✅ Historical scan tracking in Snowflake
 
-### Planned Features (Future Enhancements)
-- 🔄 Machine learning-based threat detection
-- 🔄 Custom regex pattern builder
-- 🔄 Real-time analysis dashboard
-- 🔄 Integration with threat intelligence feeds
-- 🔄 Automated email response system
-- 🔄 API for third-party integration
+### Enhanced Features (Weeks 5-7)
+- 🔄 Professional UI with responsive design
+- 🔄 Comprehensive testing and bug fixes
+- 🔄 Production deployment on AWS EC2
+- 🔄 Demo video and presentation materials
+
+### Future Enhancements (Post-Project)
+- 💡 Machine learning-based threat detection
+- 💡 Custom regex pattern builder
+- 💡 Integration with threat intelligence feeds
+- 💡 API for third-party integration
+- 💡 Support for additional file types
 
 ---
 
@@ -131,12 +141,12 @@ Results shown on dashboard
 React 18          - UI framework
 Axios             - HTTP client
 React Router      - Navigation
-CSS3/Tailwind     - Styling
+Tailwind CSS      - Styling (or custom CSS)
 ```
 
 ### Backend
 ```
-Python 3.10+      - Core language
+Python 3.10       - Core language
 Flask             - Web framework
 pdfplumber        - PDF text extraction
 python-docx       - Word document parsing
@@ -148,7 +158,7 @@ Pillow            - Image metadata extraction
 S3                - Temporary file storage (auto-delete 24hrs)
 SES               - Email receiving/sending automation
 Lambda            - Serverless email processing
-EC2               - Backend API hosting
+EC2               - Backend API hosting (t3.micro)
 IAM               - Security & permissions management
 ```
 
@@ -156,7 +166,7 @@ IAM               - Security & permissions management
 ```
 Snowflake         - Permanent result storage
                   - Historical analytics
-                  - ML model training data
+                  - Structured data queries
 ```
 
 ### DevOps
@@ -168,55 +178,93 @@ AWS CLI           - Cloud resource management
 
 ---
 
-## 🏗️ Architecture
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         USER INTERACTION                     │
-│  ┌────────────┐  ┌────────────┐  ┌────────────────────────┐│
-│  │   Email    │  │    URL     │  │   Direct Upload        ││
-│  │ Forwarding │  │  Analysis  │  │   (Fallback)           ││
-│  └──────┬─────┘  └──────┬─────┘  └───────────┬────────────┘│
-└─────────┼────────────────┼────────────────────┼─────────────┘
-          │                │                    │
-          ▼                ▼                    ▼
-    ┌─────────────────────────────────────────────┐
-    │         AWS SES    │  React Frontend        │
-    │      (Email In)    │  (Port 3000)           │
-    └─────────┬──────────┴──────────┬─────────────┘
-              │                     │
-              ▼                     ▼
-    ┌──────────────────────────────────────────────┐
-    │         AWS Lambda          Flask Backend    │
-    │      (Email Parser)         (Port 5000)      │
-    │                                               │
-    │         AWS EC2 (t3.micro)                   │
-    └────────────────┬─────────────────────────────┘
-                     │
-                     ▼
-          ┌──────────────────────┐
-          │      AWS S3          │
-          │  (Temp Storage)      │
-          │  Auto-delete: 24hrs  │
-          └──────────┬───────────┘
-                     │
-                     ▼
-          ┌──────────────────────┐
-          │  Static Analysis     │
-          │  - Extract text      │
-          │  - Run regex         │
-          │  - Calculate score   │
-          └──────────┬───────────┘
-                     │
-         ┌───────────┴───────────┐
-         │                       │
-         ▼                       ▼
-   ┌──────────┐          ┌─────────────┐
-   │Snowflake │          │ User Gets   │
-   │ Database │          │ Results     │
-   │(Permanent│          │(Email/Web)  │
-   │ Storage) │          └─────────────┘
-   └──────────┘
-```
+## 📅 7-Week Timeline
+
+**Start Date:** March 2, 2026 (Sunday)  
+**End Date:** April 17, 2026 (Friday)  
+**Total Duration:** 7 weeks (49 days)
+
+### Week-by-Week Breakdown:
+
+| Week | Dates | Focus | Key Deliverables |
+|------|-------|-------|-----------------|
+| **Week 1** | Mar 2-8 | Foundation & Setup | AWS S3 configured, Snowflake DB created, all dev environments ready |
+| **Week 2** | Mar 9-15 | Backend Core Development | Flask API routes, file processing engine, scoring algorithm |
+| **Week 3** | Mar 16-22 | Email Integration | AWS SES configured, Lambda function working, email flow complete |
+| **Week 4** | Mar 23-29 | Frontend Development | React app with all 3 analysis methods, results display |
+| **Week 5** | Mar 30-Apr 5 | Polish & Testing | Professional UI, bug fixes, user testing, optimizations |
+| **Week 6** | Apr 6-12 | Final Testing & Docs | End-to-end testing, security review, API documentation |
+| **Week 7** | Apr 13-17 | Deployment & Presentation | Production deploy, demo video, final presentation |
+
+---
+
+## 📊 Current Progress
+
+**Last Updated:** March 1, 2026, 9:00 PM CST  
+**Days Elapsed:** 1 / 49 (2%)  
+**Current Week:** Week 1 - Foundation & Setup
+
+### ✅ Completed (Week 1 - Day 1)
+
+**Project Setup:**
+- [x] NSA partnership established
+- [x] Project proposal approved
+- [x] GitHub repository created (private)
+- [x] Team structure defined
+- [x] 7-week timeline planned
+- [x] Project milestones created
+- [x] GitHub issues created for all tasks
+- [x] Project board organized
+
+**Development Environment:**
+- [x] Development environment set up (Karrington - iMac)
+- [x] Homebrew installed (package manager)
+- [x] Python 3.10 installed
+- [x] Node.js installed
+- [x] Git configured
+- [x] Repository cloned locally
+- [x] Project folder structure created
+
+**Backend Development:**
+- [x] Flask application scaffolded
+- [x] Three test endpoints created and working:
+  - `GET /` - Root endpoint
+  - `GET /api/health` - Health check
+  - `GET /api/test` - Test endpoint with team info
+- [x] requirements.txt created with all dependencies
+- [x] Environment variables template created (.env.example)
+- [x] Backend tested locally - all endpoints functional
+- [x] Initial code committed and pushed to GitHub
+
+### 🔄 In Progress (Week 1 - Days 2-7)
+
+**Infrastructure Setup:**
+- [ ] AWS credentials requested from university IT (Karrington)
+- [ ] AWS S3 buckets creation (blocked by credentials)
+- [ ] AWS IAM permissions configuration (blocked by credentials)
+- [ ] Snowflake credentials obtained (Brandon)
+- [ ] Snowflake database and tables created (Brandon)
+
+**Team Onboarding:**
+- [ ] All team members accept GitHub invitations
+- [ ] All team members clone repository
+- [ ] All team members set up development environments
+- [ ] All team members test Flask backend locally
+
+**Documentation:**
+- [ ] Complete setup guide for team members
+- [ ] AWS configuration documentation
+- [ ] Snowflake setup documentation
+
+### ⏳ Upcoming (Week 2)
+
+**Backend Development:**
+- [ ] AWS S3 client integration
+- [ ] Snowflake client integration
+- [ ] File processing engine (PDF, Word, image parsing)
+- [ ] Regex pattern library for indicator extraction
+- [ ] Malicious scoring algorithm implementation
+- [ ] API routes for URL and file upload analysis
 
 ---
 
@@ -225,27 +273,27 @@ AWS CLI           - Cloud resource management
 malicious-file-analyzer/
 │
 ├── backend/                      # Python Flask API
-│   ├── routes/                   # API endpoints
+│   ├── routes/                   # API endpoints (to be created)
 │   │   ├── email_routes.py       # Email analysis endpoints
 │   │   ├── url_routes.py         # URL analysis endpoints
 │   │   └── upload_routes.py      # File upload endpoints
 │   │
-│   ├── services/                 # Business logic
+│   ├── services/                 # Business logic (to be created)
 │   │   ├── aws_client.py         # AWS S3/SES interactions
 │   │   ├── snowflake_client.py   # Database operations
 │   │   ├── file_processor.py     # File parsing & analysis
 │   │   └── scoring.py            # Malicious score calculation
 │   │
-│   ├── utils/                    # Helper functions
+│   ├── utils/                    # Helper functions (to be created)
 │   │   ├── validators.py         # Input validation
 │   │   └── regex_patterns.py     # Indicator regex patterns
 │   │
 │   ├── tests/                    # Unit & integration tests
-│   ├── app.py                    # Main Flask application
-│   ├── requirements.txt          # Python dependencies
-│   └── .env.example              # Environment variables template
+│   ├── app.py                    # ✅ Main Flask application
+│   ├── requirements.txt          # ✅ Python dependencies
+│   └── .env.example              # ✅ Environment variables template
 │
-├── frontend/                     # React application
+├── frontend/                     # React application (to be created)
 │   ├── public/                   # Static files
 │   │   └── index.html
 │   │
@@ -259,20 +307,17 @@ malicious-file-analyzer/
 │   │   │
 │   │   ├── pages/                # Page components
 │   │   │   ├── HomePage.js
-│   │   │   ├── HistoryPage.js
 │   │   │   └── AboutPage.js
 │   │   │
 │   │   ├── services/             # API integration
 │   │   │   └── api.js            # Axios API client
 │   │   │
 │   │   ├── App.js                # Main React component
-│   │   ├── App.css               # Global styles
-│   │   └── index.js              # React entry point
+│   │   └── App.css               # Global styles
 │   │
-│   ├── package.json              # Node dependencies
-│   └── .env.example              # Frontend environment variables
+│   └── package.json              # Node dependencies
 │
-├── lambda/                       # AWS Lambda functions
+├── lambda/                       # AWS Lambda functions (to be created)
 │   ├── email_processor.py        # Email attachment extraction
 │   └── requirements.txt          # Lambda dependencies
 │
@@ -283,73 +328,17 @@ malicious-file-analyzer/
 │   └── AWS_CONFIGURATION.md      # AWS setup guide
 │
 ├── scripts/                      # Utility scripts
-│   ├── setup_aws.sh              # AWS resource setup
-│   ├── setup_snowflake.sql       # Snowflake schema
-│   └── deploy.sh                 # Deployment script
+│   └── setup_snowflake.sql       # Snowflake schema creation
 │
-├── .gitignore                    # Git ignore rules
-├── README.md                     # This file
+├── config/                       # Configuration files
+│
+├── .gitignore                    # ✅ Git ignore rules
+├── README.md                     # ✅ This file
 └── LICENSE                       # MIT License
+
+✅ = Created and working
+(to be created) = Planned for upcoming weeks
 ```
-
----
-
-## 📊 Development Status
-
-**Phase 1: Foundation (Week 1-2)** 🔄 *In Progress*
-- [x] Project proposal approved
-- [x] GitHub repository initialized
-- [x] Project structure created
-- [x] Flask backend scaffolded
-- [x] Development environment setup (Karrington)
-- [x] Initial code pushed to GitHub
-- [ ] AWS credentials obtained
-- [ ] AWS S3 buckets configured
-- [ ] Snowflake database created
-- [ ] Team members onboarded
-
-Last updated: March 1, 2026 by Karrington Hall
-
-**Phase 2: Backend Development (Week 2-4)** 🔜 *Upcoming*
-- [ ] Flask API scaffolding
-- [ ] AWS S3/SES integration
-- [ ] File processing engine
-- [ ] Regex pattern library
-- [ ] Snowflake data models
-
-**Phase 3: Email Integration (Week 4)** 🔜 *Upcoming*
-- [ ] AWS SES configuration
-- [ ] Lambda email processor
-- [ ] Automated response system
-
-**Phase 4: Frontend Development (Week 5-6)** 🔜 *Upcoming*
-- [ ] React app initialization
-- [ ] Three-method UI components
-- [ ] Results dashboard
-- [ ] CSV export functionality
-
-**Phase 5: Styling & UX (Week 7)** 🔜 *Upcoming*
-- [ ] CSS/Tailwind implementation
-- [ ] Responsive design
-- [ ] Accessibility compliance
-
-**Phase 6: Advanced Features (Week 8-9)** 🔜 *Upcoming*
-- [ ] Custom regex tester
-- [ ] Historical scan viewer
-- [ ] Performance optimization
-
-**Phase 7: ML Integration (Week 10-12)** 🔜 *Upcoming*
-- [ ] Training data collection
-- [ ] Model development
-- [ ] Score algorithm enhancement
-
-**Phase 8: Testing & Deployment (Week 13)** 🔜 *Upcoming*
-- [ ] Unit testing
-- [ ] Integration testing
-- [ ] User acceptance testing
-- [ ] Production deployment
-
-> 📅 **Last Updated:** [Date] | **Current Sprint:** Week 1
 
 ---
 
@@ -362,66 +351,206 @@ Before you begin, ensure you have:
 - **Python 3.10+** - [Download](https://www.python.org/downloads/)
 - **Node.js 18+** - [Download](https://nodejs.org/)
 - **Git** - [Download](https://git-scm.com/)
-- **AWS Account** - [Sign Up](https://aws.amazon.com/)
-- **Snowflake Account** - [Academic Access](https://www.snowflake.com/education/)
+- **AWS Account** - University access required
+- **Snowflake Account** - University academic access
 
-### Quick Start
+### Quick Start (For Team Members)
+
+**Step 1: Clone the Repository**
 ```bash
-# 1. Clone the repository
-git clone https://github.com/your-username/malicious-file-analyzer.git
+git clone https://github.com/Karri53/malicious-file-analyzer.git
 cd malicious-file-analyzer
+```
 
-# 2. Backend setup
+**Step 2: Backend Setup**
+```bash
 cd backend
 python3 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+```
+
+**Step 3: Configure Environment Variables**
+```bash
 cp .env.example .env
 # Edit .env with your AWS/Snowflake credentials
+```
 
-# 3. Frontend setup
-cd ../frontend
-npm install
-
-# 4. Run the application
-# Terminal 1 - Backend:
-cd backend && python app.py
-
-# Terminal 2 - Frontend:
-cd frontend && npm start
-
-# Access at: http://localhost:3000
+**Step 4: Test Backend**
+```bash
+python app.py
+# Visit http://localhost:5000/api/health in your browser
 ```
 
 ### Detailed Setup
 
-See our comprehensive setup guide: [docs/SETUP.md](docs/SETUP.md)
+See our comprehensive setup guide: [docs/SETUP.md](docs/SETUP.md) *(to be created Week 1)*
+
+---
+
+## 📈 Weekly Goals
+
+### Week 1: Foundation & Setup (March 2-8) - IN PROGRESS
+
+**Goals:**
+- ✅ Complete development environment setup for all team members
+- ⏳ Obtain AWS credentials from university
+- ⏳ Configure AWS S3 buckets with lifecycle policies
+- ⏳ Set up Snowflake database with complete schema
+- ⏳ All team members can run Flask backend locally
+- ⏳ Complete project documentation structure
+
+**Success Criteria:**
+- AWS S3 operational with test upload/download
+- Snowflake database accessible from Python
+- All 4 team members have working dev environments
+- GitHub workflow established (everyone can commit/push)
+
+---
+
+### Week 2: Backend Core (March 9-15)
+
+**Goals:**
+- Build complete Flask API structure with route blueprints
+- Implement file processing engine (PDF, Word, image parsing)
+- Create regex library for indicator extraction
+- Develop malicious scoring algorithm
+- Integrate AWS S3 client for file operations
+- Integrate Snowflake client for data persistence
+
+**Success Criteria:**
+- Can analyze a PDF and extract URLs, IPs, emails
+- Scoring algorithm returns accurate severity levels
+- Files upload to S3 and results save to Snowflake
+- All API endpoints tested with Postman
+
+---
+
+### Week 3: Email Integration (March 16-22)
+
+**Goals:**
+- Configure AWS SES for email receiving
+- Verify domain for email forwarding
+- Deploy Lambda function for email processing
+- Implement automated results email generation
+- Test end-to-end email forwarding flow
+
+**Success Criteria:**
+- Users can forward emails to analyze@[domain]
+- Attachments extracted automatically
+- Results emailed back within 3 minutes
+- Error handling for invalid emails
+
+---
+
+### Week 4: Frontend Development (March 23-29)
+
+**Goals:**
+- Initialize React application
+- Build EmailInstructions component (primary method)
+- Build URLAnalyzer component (secondary method)
+- Build FileUploader component (fallback method)
+- Build ResultsDisplay component with indicator lists
+- Implement CSV export functionality
+- Connect frontend to backend API
+
+**Success Criteria:**
+- All 3 analysis methods functional
+- Results display correctly with severity indicators
+- User can export results as CSV
+- Basic styling in place (professional appearance)
+
+---
+
+### Week 5: Polish & Testing (March 30-April 5)
+
+**Goals:**
+- Apply professional CSS styling (Tailwind or custom)
+- Implement responsive design for mobile
+- Conduct user testing with 3-5 test users
+- Fix all critical bugs
+- Optimize backend performance
+- Add loading states and error handling
+
+**Success Criteria:**
+- UI looks professional and polished
+- Works on mobile devices
+- No critical bugs
+- User satisfaction rating >4/5 stars
+- All features tested end-to-end
+
+---
+
+### Week 6: Final Testing & Documentation (April 6-12)
+
+**Goals:**
+- End-to-end integration testing
+- Security review and hardening
+- Complete API documentation
+- Write deployment guide
+- Create user manual
+- Performance testing and optimization
+
+**Success Criteria:**
+- All test scenarios pass
+- No security vulnerabilities identified
+- Documentation complete and clear
+- Ready for production deployment
+
+---
+
+### Week 7: Deployment & Presentation (April 13-17)
+
+**Goals:**
+- Deploy backend to AWS EC2
+- Deploy frontend to hosting (Netlify/Vercel)
+- Create demo video (3-5 minutes)
+- Prepare final presentation slides
+- Rehearse presentation
+- **Final presentation: April 17, 2026**
+
+**Success Criteria:**
+- Application live and accessible via HTTPS
+- Demo video professional quality
+- Presentation ready and practiced
+- All deliverables submitted
 
 ---
 
 ## 📚 Documentation
 
-- **[Setup Guide](docs/SETUP.md)** - Complete installation instructions
-- **[Architecture Overview](docs/ARCHITECTURE.md)** - System design & data flow
-- **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API reference
-- **[AWS Configuration](docs/AWS_CONFIGURATION.md)** - Cloud infrastructure setup
+- **[Setup Guide](docs/SETUP.md)** - Complete installation instructions *(Week 1)*
+- **[Architecture Overview](docs/ARCHITECTURE.md)** - System design & data flow *(Week 1)*
+- **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API reference *(Week 6)*
+- **[AWS Configuration](docs/AWS_CONFIGURATION.md)** - Cloud infrastructure setup *(Week 1)*
 
 ---
 
 ## 🤝 Contributing
 
-This is an academic project developed as part of Prairie View A&M University's Senior Design course. Contributions are limited to team members during the development phase.
+This is an academic project for Prairie View A&M University's Senior Design course. Contributions are limited to team members during the development phase (March 2 - April 17, 2026).
 
 ### For Team Members
 
-1. Clone the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Test thoroughly
-5. Commit with descriptive messages (`git commit -m 'Add amazing feature'`)
-6. Push to your branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request to `dev` branch
-8. Request review from team lead
+**Daily Git Workflow:**
+```bash
+# Start of day - get latest code
+git pull origin main
+
+# Work on your features
+# ... make changes ...
+
+# End of day - save and share
+git add .
+git commit -m "Brief description of changes"
+git push origin main
+```
+
+**Communication:**
+- GitHub Issues for task tracking
+- Daily standups (5 minutes, optional)
+- AI group chat for technical questions
+- Email for urgent blockers
 
 ---
 
@@ -431,8 +560,8 @@ This project is developed under the guidance of Prairie View A&M University and 
 
 For academic and educational purposes only.
 
----
 
+---
 
 ## ⚠️ Disclaimer
 
@@ -443,10 +572,36 @@ This tool provides automated malware analysis for educational and research purpo
 ## 🙏 Acknowledgments
 
 - **National Security Agency (NSA)** - Project partnership and technical guidance
-- **Dr. Gregory Stevenson** - NSA academic liaison
+- **Dr. Gregory Stevenson** - NSA academic liaison and mentor
 - **Mr. Andrew Hutton** - NSA software engineering mentor
+- **Dr. Nourshin Ghaffari** - Faculty advisor
 - **Prairie View A&M University** - Academic support and resources
+- **AWS Educate** - Cloud infrastructure access
 - **Snowflake** - Database platform and academic access
+
+---
+
+## 📊 Project Statistics
+
+**Timeline:**
+- Start: March 2, 2026
+- End: April 17, 2026
+- Duration: 7 weeks (49 days)
+- Days Elapsed: 1
+- Days Remaining: 48
+- Progress: 2% complete
+
+**Code Statistics:** *(Updated Weekly)*
+- Total Lines of Code: ~150 (Week 1, Day 1)
+- Python Files: 3
+- JavaScript Files: 0 (Week 4)
+- Total Commits: 5
+- Contributors: 1 (growing to 4)
+
+**Latest Update:**
+- Date: March 1, 2026, 9:00 PM CST
+- Updated by: Karrington Hall
+- Changes: Initial backend created, development environment ready
 
 ---
 
@@ -456,7 +611,8 @@ This tool provides automated malware analysis for educational and research purpo
 
 *Protecting users from malware, one analysis at a time.*
 
-[![GitHub stars](https://img.shields.io/github/stars/your-username/malicious-file-analyzer?style=social)](https://github.com/your-username/malicious-file-analyzer/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/your-username/malicious-file-analyzer?style=social)](https://github.com/your-username/malicious-file-analyzer/network/members)
+**Week 1 of 7 | Days 1-7 | March 2-8, 2026**
+
+[View Issues](https://github.com/Karri53/malicious-file-analyzer/issues) • [Project Board](https://github.com/Karri53/malicious-file-analyzer/projects) • [Milestones](https://github.com/Karri53/malicious-file-analyzer/milestones)
 
 </div>
