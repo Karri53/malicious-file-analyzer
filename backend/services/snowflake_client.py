@@ -1,209 +1,155 @@
 """
-Snowflake Database Client - Mock Implementation
-Simulates Snowflake operations using in-memory storage for testing.
-Will be replaced with real snowflake-connector-python once credentials available.
+Snowflake Client Factory
+Automatically switches between MockSnowflakeClient and RealSnowflakeClient
+based on environment configuration
 """
 
+import os
+from typing import Union
 import logging
-from datetime import datetime
-from typing import Dict, List, Optional
-import uuid
 
 logger = logging.getLogger(__name__)
 
 
 class MockSnowflakeClient:
     """
-    Mock Snowflake client for development without credentials.
-    Stores data in memory (simulates database tables).
+    Mock Snowflake client for development and testing.
+    Stores data in memory only.
     """
     
     def __init__(self):
-        """Initialize mock Snowflake client with in-memory tables"""
-        # Simulate tables as dictionaries and lists
-        self.scan_results = {}  # scan_id -> scan record
-        self.indicators = []     # list of indicator records
-        self.email_sources = {}  # scan_id -> email source record
-        self.url_sources = {}    # scan_id -> url source record
-        self.file_metadata = []  # list of metadata records
-        
-        logger.info("MockSnowflakeClient initialized (using in-memory storage)")
+        """Initialize mock client with empty storage."""
+        self.scans = {}
+        self.indicators = {}
+        self.email_sources = {}
+        self.url_sources = {}
+        self.metadata = {}
+        logger.info("Mock Snowflake client initialized")
     
-    def save_scan_result(self, scan_data: Dict) -> Dict:
-        """
-        Save a complete scan result to database
-        
-        Args:
-            scan_data (dict): Complete scan information including:
-                - scan_id: Unique identifier
-                - filename: Original filename
-                - file_type: File extension
-                - file_hash: SHA256 hash
-                - malicious_score: Score 0.0-1.0
-                - severity: Low/Moderate/High Severity
-                - indicators: List of found indicators
-                - source_method: email/url/upload
-                - email_data: Email metadata (if source_method=email)
-                - url_data: URL metadata (if source_method=url)
-                
-        Returns:
-            dict: Result with success status and scan_id
-        """
-        scan_id = scan_data.get('scan_id')
-        
-        # Save main scan record
-        self.scan_results[scan_id] = {
+    def insert_scan_result(self, scan_data: dict) -> str:
+        """Mock insert scan result - stores in memory."""
+        import uuid
+        scan_id = str(uuid.uuid4())
+        self.scans[scan_id] = {
+            **scan_data,
             'scan_id': scan_id,
-            'filename': scan_data.get('filename'),
-            'file_type': scan_data.get('file_type'),
-            'file_hash': scan_data.get('file_hash'),
-            'malicious_score': scan_data.get('malicious_score'),
-            'severity': scan_data.get('severity'),
-            'upload_timestamp': datetime.now().isoformat(),
-            'source_method': scan_data.get('source_method', 'unknown'),
-            'analysis_duration': scan_data.get('analysis_duration', 0)
+            'upload_timestamp': 'mock_timestamp'
         }
-        
-        # Save indicators
-        indicators_saved = 0
-        for indicator in scan_data.get('indicators', []):
-            self.indicators.append({
-                'indicator_id': str(uuid.uuid4()),
-                'scan_id': scan_id,
-                'indicator_type': indicator.get('type'),
-                'indicator_value': indicator.get('value'),
-                'created_at': datetime.now().isoformat()
-            })
-            indicators_saved += 1
-        
-        # Save source-specific data
-        if scan_data.get('source_method') == 'email':
-            email_data = scan_data.get('email_data', {})
-            self.email_sources[scan_id] = {
-                'email_source_id': str(uuid.uuid4()),
-                'scan_id': scan_id,
-                'sender_email': email_data.get('sender'),
-                'subject': email_data.get('subject'),
-                'received_at': datetime.now().isoformat()
-            }
-        elif scan_data.get('source_method') == 'url':
-            url_data = scan_data.get('url_data', {})
-            self.url_sources[scan_id] = {
-                'url_source_id': str(uuid.uuid4()),
-                'scan_id': scan_id,
-                'original_url': url_data.get('url'),
-                'download_status': 'success',
-                'created_at': datetime.now().isoformat()
-            }
-        
-        logger.info(f"[MOCK] Saved scan result: {scan_id} with {indicators_saved} indicators")
-        
-        return {
-            'success': True,
-            'scan_id': scan_id,
-            'indicators_saved': indicators_saved
-        }
+        logger.info(f"[MOCK] Inserted scan result: {scan_id}")
+        return scan_id
     
-    def get_scan_by_id(self, scan_id: str) -> Optional[Dict]:
-        """
-        Retrieve a scan result by ID
-        
-        Args:
-            scan_id (str): Scan identifier
-            
-        Returns:
-            dict: Scan result with indicators, or None if not found
-        """
-        scan = self.scan_results.get(scan_id)
-        
-        if scan:
-            # Get associated indicators
-            scan_indicators = [
-                ind for ind in self.indicators 
-                if ind['scan_id'] == scan_id
-            ]
-            scan['indicators'] = scan_indicators
-            
-            # Get source-specific data
-            if scan_id in self.email_sources:
-                scan['email_source'] = self.email_sources[scan_id]
-            if scan_id in self.url_sources:
-                scan['url_source'] = self.url_sources[scan_id]
-            
-            logger.info(f"[MOCK] Retrieved scan: {scan_id}")
-        else:
-            logger.warning(f"[MOCK] Scan not found: {scan_id}")
-            
-        return scan
+    def insert_indicators(self, scan_id: str, indicators: list) -> int:
+        """Mock insert indicators - stores in memory."""
+        if scan_id not in self.indicators:
+            self.indicators[scan_id] = []
+        self.indicators[scan_id].extend(indicators)
+        logger.info(f"[MOCK] Inserted {len(indicators)} indicators for scan {scan_id}")
+        return len(indicators)
     
-    def get_recent_scans(self, limit: int = 10) -> List[Dict]:
-        """
-        Get most recent scan results
-        
-        Args:
-            limit (int): Maximum number of results
-            
-        Returns:
-            list: Recent scan results
-        """
-        scans = list(self.scan_results.values())
-        scans.sort(key=lambda x: x['upload_timestamp'], reverse=True)
-        
-        logger.info(f"[MOCK] Retrieved {len(scans[:limit])} recent scans")
-        return scans[:limit]
+    def insert_email_source(self, scan_id: str, email_data: dict) -> str:
+        """Mock insert email source."""
+        import uuid
+        email_source_id = str(uuid.uuid4())
+        self.email_sources[email_source_id] = {
+            **email_data,
+            'scan_id': scan_id
+        }
+        logger.info(f"[MOCK] Inserted email source: {email_source_id}")
+        return email_source_id
     
-    def get_scan_statistics(self) -> Dict:
-        """
-        Get overall statistics
-        
-        Returns:
-            dict: Statistics including total scans, severity counts, etc.
-        """
-        total = len(self.scan_results)
-        
-        severities = {
-            'high': 0,
-            'moderate': 0,
-            'low': 0
+    def insert_url_source(self, scan_id: str, url_data: dict) -> str:
+        """Mock insert URL source."""
+        import uuid
+        url_source_id = str(uuid.uuid4())
+        self.url_sources[url_source_id] = {
+            **url_data,
+            'scan_id': scan_id
         }
-        
-        for scan in self.scan_results.values():
-            severity = scan.get('severity', '').lower()
-            if 'high' in severity:
-                severities['high'] += 1
-            elif 'moderate' in severity:
-                severities['moderate'] += 1
-            elif 'low' in severity:
-                severities['low'] += 1
-        
-        stats = {
-            'total_scans': total,
-            'high_severity': severities['high'],
-            'moderate_severity': severities['moderate'],
-            'low_severity': severities['low'],
-            'total_indicators': len(self.indicators),
-            'email_scans': len(self.email_sources),
-            'url_scans': len(self.url_sources)
-        }
-        
-        logger.info(f"[MOCK] Statistics retrieved: {total} scans")
-        return stats
+        logger.info(f"[MOCK] Inserted URL source: {url_source_id}")
+        return url_source_id
+    
+    def insert_file_metadata(self, scan_id: str, metadata: dict) -> int:
+        """Mock insert file metadata."""
+        if scan_id not in self.metadata:
+            self.metadata[scan_id] = {}
+        self.metadata[scan_id].update(metadata)
+        logger.info(f"[MOCK] Inserted {len(metadata)} metadata entries for scan {scan_id}")
+        return len(metadata)
+    
+    def get_scan_by_id(self, scan_id: str) -> dict:
+        """Mock get scan by ID."""
+        return self.scans.get(scan_id)
+    
+    def get_recent_scans(self, limit: int = 10) -> list:
+        """Mock get recent scans."""
+        return list(self.scans.values())[:limit]
+    
+    def get_indicators_for_scan(self, scan_id: str) -> list:
+        """Mock get indicators."""
+        return self.indicators.get(scan_id, [])
+    
+    def close(self):
+        """Mock close connection."""
+        logger.info("[MOCK] Connection closed")
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 
 def get_snowflake_client():
     """
-    Returns appropriate Snowflake client based on environment.
+    Smart factory function that returns appropriate Snowflake client.
     
     Returns:
-        SnowflakeClient: Mock or real Snowflake client
-    """
-    import os
-    snowflake_account = os.environ.get('SNOWFLAKE_ACCOUNT')
+        - RealSnowflakeClient if ENVIRONMENT='production' and credentials exist
+        - MockSnowflakeClient otherwise
     
-    if snowflake_account:
-        # TODO: Import and return real Snowflake client when credentials available
-        logger.info("Snowflake credentials detected (real client not yet implemented)")
-        return MockSnowflakeClient()
+    Usage:
+        from services.snowflake_client import get_snowflake_client
+        
+        with get_snowflake_client() as sf:
+            scan_id = sf.insert_scan_result(scan_data)
+    """
+    environment = os.getenv('ENVIRONMENT', 'development')
+    
+    # Check if all Snowflake credentials are present
+    required_vars = [
+        'SNOWFLAKE_ACCOUNT',
+        'SNOWFLAKE_USER',
+        'SNOWFLAKE_PASSWORD',
+        'SNOWFLAKE_WAREHOUSE',
+        'SNOWFLAKE_DATABASE',
+        'SNOWFLAKE_SCHEMA'
+    ]
+    
+    has_credentials = all(os.getenv(var) for var in required_vars)
+    
+    # Use real client if environment is production AND credentials exist
+    if environment == 'production' and has_credentials:
+        try:
+            from services.real_snowflake_client import RealSnowflakeClient
+            logger.info("Using REAL Snowflake client (production mode)")
+            return RealSnowflakeClient()
+        except ImportError as e:
+            logger.warning(
+                f"Could not import RealSnowflakeClient: {e}. "
+                "Falling back to MockSnowflakeClient. "
+                "Install snowflake-connector-python: pip install snowflake-connector-python"
+            )
+            return MockSnowflakeClient()
+        except Exception as e:
+            logger.error(
+                f"Failed to initialize RealSnowflakeClient: {e}. "
+                "Falling back to MockSnowflakeClient."
+            )
+            return MockSnowflakeClient()
     else:
-        logger.info("No Snowflake credentials - using MockSnowflakeClient")
+        # Use mock client for development or if credentials missing
+        if not has_credentials:
+            logger.info("Using MOCK Snowflake client (missing credentials)")
+        else:
+            logger.info("Using MOCK Snowflake client (development mode)")
         return MockSnowflakeClient()
