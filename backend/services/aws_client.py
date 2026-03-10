@@ -120,13 +120,11 @@ def get_s3_client():
     """
     # Check if AWS credentials are available
     aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID')
-    
-    if aws_access_key:
-        # TODO: Import and return real boto3 S3 client when credentials available
-        # from real_aws_client import RealS3Client
-        # return RealS3Client()
-        logger.info("AWS credentials detected (boto3 not yet implemented)")
-        return MockS3Client()
-    else:
-        logger.info("No AWS credentials - using MockS3Client")
-        return MockS3Client()
+
+if aws_access_key:
+    from .real_aws_client import RealS3Client
+    logger.info("AWS credentials detected - using RealS3Client")
+    return RealS3Client()
+else:
+    logger.info("No AWS credentials - using MockS3Client")
+    return MockS3Client()
