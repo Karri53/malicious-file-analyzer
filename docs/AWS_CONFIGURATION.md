@@ -8,6 +8,30 @@ This guide walks through setting up all required AWS services for the Malicious 
 - AWS CLI installed
 - IAM user with administrative permissions
 
+## Backend S3 Client Configuration
+
+The backend uses a factory pattern to choose between a mock S3 client and a real AWS S3 client.
+
+### Client Selection Logic
+- If `AWS_ACCESS_KEY_ID` is present in the environment, the backend uses `RealS3Client`
+- If AWS credentials are not present, the backend falls back to `MockS3Client`
+
+This allows local development and testing to continue even before real AWS credentials are provided.
+
+### Relevant Backend Files
+- `backend/services/aws_client.py`
+- `backend/services/real_aws_client.py`
+- `backend/test_mock_s3.py`
+
+### Required Environment Variables
+Add these values to `.env` when AWS credentials are available:
+
+```env
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_DEFAULT_REGION=us-east-1
+S3_BUCKET_NAME=malware-analyzer-uploads-temp-pvamu
+
 ## Step 1: Configure AWS CLI
 ```bash
 aws configure
