@@ -223,7 +223,7 @@ Specs: background `#181510` · border-radius 8px · padding 12px 16px · Space M
 - Hover border: `#77997B` (sage)
 - Hover background: `rgba(119,153,123,0.04)`
 - Drag-active border: `#77997B` solid
-- Supported formats: `.exe` `.dll` `.pdf` `.docx` `.xlsx` `.zip` `.rar` `.js` `.html` `.py` and 40+ more
+- Supported formats: `.pdf` `.docx` `.png` `.jpg` 
 - Max file size: 256 MB
 
 ### Cards
