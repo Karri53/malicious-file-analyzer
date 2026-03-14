@@ -1,10 +1,7 @@
 # UI Design Documentation
 
 > **NSA Senior Design Project | Prairie View A&M University | Spring 2026**
-> Prepared by: Kendall Brown (UI/Frontend Developer) — Week 2 Deliverable
 
-[![Design Status](https://img.shields.io/badge/Design%20Status-Week%202%20Complete-green)](https://github.com/Karri53/malicious-file-analyzer)
-[![Pages](https://img.shields.io/badge/Pages%20Designed-9-blue)](https://github.com/Karri53/malicious-file-analyzer)
 [![Tool](https://img.shields.io/badge/Design%20Tool-Figma-orange)](https://figma.com)
 
 ---
