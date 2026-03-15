@@ -1,0 +1,1 @@
+Connect to localhost:8000 and test the app on 127.0.0.1 during development.
