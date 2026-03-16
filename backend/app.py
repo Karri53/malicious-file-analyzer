@@ -108,8 +108,8 @@ def analyze_upload():
         
         # Step 2: Extract malicious indicators from text
         extractor = IndicatorExtractor()
-        indicators = extractor.extract_all_indicators(file_data['text'])
-        
+        indicators = extractor.extract_all_indicators(file_data['extracted_text'])
+
         # Step 3: Calculate malicious score
         scorer = MaliciousScorer()
         score_result = scorer.calculate_score(indicators)
