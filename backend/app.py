@@ -108,7 +108,7 @@ def analyze_upload():
         
         # Step 2: Extract malicious indicators from text
         extractor = IndicatorExtractor()
-        indicators = extractor.extract_all_indicators(file_data['text'])
+        indicators = extractor.extract_all_indicators(file_data['extracted_text'])
         
         # Step 3: Calculate malicious score
         scorer = MaliciousScorer()
@@ -120,7 +120,7 @@ def analyze_upload():
             scan_data = {
                 'filename': file.filename,
                 'file_type': file_data['file_type'],
-                'file_size_bytes': file_data['size'],
+                'file_size_bytes': file_data['file_size'],
                 'malicious_score': score_result['score'],
                 'severity': score_result['severity'],
                 'analysis_duration_seconds': time.time() - start_time,
@@ -136,10 +136,13 @@ def analyze_upload():
             # Store individual indicators
             indicator_list = []
             for ind_type, values in indicators.items():
+                if ind_type == 'total_count':
+                    continue
                 for value in values:
+                    v = value['value'] if isinstance(value, dict) else value
                     indicator_list.append({
                         'indicator_type': ind_type,
-                        'indicator_value': value,
+                        'indicator_value': v,
                         'confidence': 1.0
                     })
             
@@ -158,7 +161,7 @@ def analyze_upload():
             'score': score_result['score'],
             'severity': score_result['severity'],
             'indicators': indicators,
-            'explanation': score_result['explanation'],
+            'explanation': ', '.join(score_result['reasons']),
             'analysis_time_seconds': round(time.time() - start_time, 2)
         }), 200
         

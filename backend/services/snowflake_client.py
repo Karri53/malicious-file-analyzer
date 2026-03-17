@@ -153,3 +153,17 @@ def get_snowflake_client():
         else:
             logger.info("Using MOCK Snowflake client (development mode)")
         return MockSnowflakeClient()
+
+
+_mock_instance = None
+
+_original_get_snowflake_client = get_snowflake_client
+
+def get_snowflake_client():
+    global _mock_instance
+    client = _original_get_snowflake_client()
+    if isinstance(client, MockSnowflakeClient):
+        if _mock_instance is None:
+            _mock_instance = client
+        return _mock_instance
+    return client
