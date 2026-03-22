@@ -18,3 +18,4 @@ snowflake-connector-python==3.7.0
 
 # Testing (optional but recommended)
 pytest==7.4.3
+requests==2.31.0
