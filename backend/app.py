@@ -120,7 +120,7 @@ def analyze_upload():
             scan_data = {
                 'filename': file.filename,
                 'file_type': file_data['file_type'],
-                'file_size_bytes': file_data['size'],
+                'file_size_bytes': file_data['file_size'],
                 'malicious_score': score_result['score'],
                 'severity': score_result['severity'],
                 'analysis_duration_seconds': time.time() - start_time,
@@ -136,6 +136,9 @@ def analyze_upload():
             # Store individual indicators
             indicator_list = []
             for ind_type, values in indicators.items():
+                # Skip total_count - it's an int, not a list
+                if ind_type == 'total_count':
+                    continue
                 for value in values:
                     indicator_list.append({
                         'indicator_type': ind_type,
@@ -158,7 +161,7 @@ def analyze_upload():
             'score': score_result['score'],
             'severity': score_result['severity'],
             'indicators': indicators,
-            'explanation': score_result['explanation'],
+            'explanation': score_result['reasons'],  
             'analysis_time_seconds': round(time.time() - start_time, 2)
         }), 200
         
@@ -275,6 +278,9 @@ def analyze_url():
             # Store individual indicators
             indicator_list = []
             for ind_type, values in indicators.items():
+                # Skip total_count - it's an int, not a list
+                if ind_type == 'total_count':
+                    continue
                 for value in values:
                     indicator_list.append({
                         'indicator_type': ind_type,
@@ -286,7 +292,7 @@ def analyze_url():
                 sf.insert_indicators(scan_id, indicator_list)
                 logger.info(f"Stored {len(indicator_list)} indicators")
         
-        # Step 6: Clean up downloaded file
+        # Step 6: Clean up downloaded file  ← Next section should be this!
         downloader.cleanup_file(file_path)
         
         # Step 7: Return results to user
@@ -298,7 +304,7 @@ def analyze_url():
             'score': score_result['score'],
             'severity': score_result['severity'],
             'indicators': indicators,
-            'explanation': score_result['explanation'],
+            'explanation': score_result['reasons'],  
             'analysis_time_seconds': round(time.time() - start_time, 2)
         }), 200
         
