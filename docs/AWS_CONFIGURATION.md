@@ -76,3 +76,34 @@ The `get_s3_client()` function implements a factory pattern that determines whic
 If the environment variable is not present, the function returns `MockS3Client`, which simulates S3 behavior using the local filesystem. This allows developers to test file upload, download, and deletion logic without needing actual AWS access.
 
 This design keeps the rest of the backend code independent from AWS-specific implementation details. Any part of the system that needs file storage simply calls `get_s3_client()` and uses the returned object, regardless of whether it is a mock or real implementation. This improves modularity, simplifies testing, and makes the transition to real AWS services seamless once credentials are available.
+
+
+## Lambda Email Processing Integration
+
+The project includes an AWS Lambda function in `lambda/email_processor.py` that processes incoming email messages stored in S3. The function is triggered by an S3 `PUT` event and reads the raw email object from the configured email bucket.
+
+After loading the email, the Lambda function parses attachments, filters them using allowed file types and attachment size limits, and sends each valid attachment to the backend API endpoint:
+
+```text
+POST /api/analyze/upload
+
+This is important because the backend endpoint /api/analyze/email is not yet implemented, so the Lambda function currently relies on the upload analysis endpoint for file scanning. The upload endpoint processes the file, extracts text and indicators, calculates a maliciousness score, stores the results in Snowflake, and returns the analysis response.
+
+The Lambda function uses these environment variables:
+
+BACKEND_API_URL
+ALLOWED_FILE_TYPES
+MAX_ATTACHMENT_SIZE_MB
+MAX_ATTACHMENTS_PER_EMAIL
+SENDER_EMAIL
+
+After processing, the Lambda function attempts to move the original email object to a processed or failed location in S3 and sends a results email through Amazon SES.
+
+
+## Deployment Notes and Issues Encountered
+
+- The original deployment commands were written for macOS/Linux (`source`, `cp`) and were updated for Windows PowerShell compatibility.
+- The Lambda function depends on a reachable backend API URL. Local or deployed testing will fail if `BACKEND_API_URL` is incorrect or the Flask backend is not running.
+- The Lambda function expects an S3 event with `Records[0].s3.bucket.name` and `Records[0].s3.object.key`, so local testing requires a realistic S3 event JSON payload.
+- The current backend endpoint `/api/analyze/email` is not implemented yet. Lambda currently sends attachments to `/api/analyze/upload` instead.
+- The S3 key move logic in `email_processor.py` uses string replacement for `/incoming/`, so the exact S3 object key format should be verified during deployment testing.
