@@ -1,3 +1,0 @@
-Malware config 77: beacon 103.244.72.12 and fetch second stage from http://paypa1-login.ru:8443/dropper.
-
-This sample intentionally contains malicious indicators for testing.

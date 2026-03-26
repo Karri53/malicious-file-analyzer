@@ -1,3 +1,0 @@
-IOC report 7: MD5 098f6bcd4621d373cade4e832627b4f6 SHA1 6b86b273ff34fce19d6b804eff5a3f5747ada4ea SHA256 4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce. Callback URL https://cdn-update.zip/gate.
-
-This sample intentionally contains malicious indicators for testing.

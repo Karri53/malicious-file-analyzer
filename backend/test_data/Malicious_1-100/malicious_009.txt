@@ -1,3 +1,0 @@
-URGENT incident 9: download payload from http://wallet-restore.xyz:8443/update and send status to security@secure-reset.top.
-
-This sample intentionally contains malicious indicators for testing.

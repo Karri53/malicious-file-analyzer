@@ -1,3 +1,0 @@
-Phishing lure 12: verify account at https://portal-confirm.work/login?auth=reset and contact ops@urgent-auth.biz.
-
-This sample intentionally contains malicious indicators for testing.

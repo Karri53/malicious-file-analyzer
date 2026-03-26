@@ -1,3 +1,0 @@
-Ransom note 36: pay 1KFHE7w8BhaENAswwryaoccDb6qcT6DbYY or backup key to 0xfe9e8709d3215310075d67e3ed32a380ccf451c8. C2 server 91.219.236.222.
-
-This sample intentionally contains malicious indicators for testing.

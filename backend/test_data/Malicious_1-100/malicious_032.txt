@@ -1,3 +1,0 @@
-Ransom note 32: pay 1BoatSLRHtKNngkdXEeobR76b53LETtpyT or backup key to 0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe. C2 server 172.67.45.99.
-
-This sample intentionally contains malicious indicators for testing.

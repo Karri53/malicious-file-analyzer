@@ -1,3 +1,0 @@
-URGENT incident 42: download payload from http://urgent-auth.biz:4444/update and send status to billing@invoice-check.cc.
-
-This sample intentionally contains malicious indicators for testing.

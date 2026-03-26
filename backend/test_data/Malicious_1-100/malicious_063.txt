@@ -1,3 +1,0 @@
-Phishing lure 63: verify account at https://secure-reset.top/login?auth=reset and contact billing@invoice-check.cc.
-
-This sample intentionally contains malicious indicators for testing.

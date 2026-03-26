@@ -1,3 +1,0 @@
-Ransom note 94: pay 3Ai1JZ8pdJb2ksieUV8FsxSNVJCpoPi8W6 or backup key to 0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe. C2 server 91.219.236.222.
-
-This sample intentionally contains malicious indicators for testing.

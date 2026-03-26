@@ -1,3 +1,0 @@
-Ransom note 70: pay 1KFHE7w8BhaENAswwryaoccDb6qcT6DbYY or backup key to 0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe. C2 server 103.244.72.12.
-
-This sample intentionally contains malicious indicators for testing.

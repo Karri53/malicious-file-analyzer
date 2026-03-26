@@ -1,3 +1,0 @@
-IOC report 91: MD5 098f6bcd4621d373cade4e832627b4f6 SHA1 6b86b273ff34fce19d6b804eff5a3f5747ada4ea SHA256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855. Callback URL https://verify-now.click/gate.
-
-This sample intentionally contains malicious indicators for testing.

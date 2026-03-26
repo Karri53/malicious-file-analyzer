@@ -1,3 +1,0 @@
-URGENT incident 19: download payload from http://portal-confirm.work:8443/update and send status to billing@invoice-check.cc.
-
-This sample intentionally contains malicious indicators for testing.

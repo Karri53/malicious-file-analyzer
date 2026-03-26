@@ -1,3 +1,0 @@
-IOC report 78: MD5 25f9e794323b453885f5181f1b624d0b SHA1 2fd4e1c67a2d28fced849ee1bb76e7391b93eb12 SHA256 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08. Callback URL https://verify-now.click/gate.
-
-This sample intentionally contains malicious indicators for testing.

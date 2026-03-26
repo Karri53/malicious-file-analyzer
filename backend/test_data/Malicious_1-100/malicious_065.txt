@@ -1,3 +1,0 @@
-IOC report 65: MD5 25f9e794323b453885f5181f1b624d0b SHA1 da39a3ee5e6b4b0d3255bfef95601890afd80709 SHA256 2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae. Callback URL https://wallet-restore.xyz/gate.
-
-This sample intentionally contains malicious indicators for testing.

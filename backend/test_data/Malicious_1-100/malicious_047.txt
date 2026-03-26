@@ -1,3 +1,0 @@
-Phishing lure 47: verify account at https://invoice-check.cc/login?auth=reset and contact wallet@wallet-restore.xyz.
-
-This sample intentionally contains malicious indicators for testing.

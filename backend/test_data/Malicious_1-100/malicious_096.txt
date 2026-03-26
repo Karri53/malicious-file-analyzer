@@ -1,3 +1,0 @@
-URGENT incident 96: download payload from http://secure-reset.top:1337/update and send status to admin@paypa1-login.ru.
-
-This sample intentionally contains malicious indicators for testing.

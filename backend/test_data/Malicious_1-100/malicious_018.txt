@@ -1,3 +1,0 @@
-Malware config 18: beacon 185.220.101.1 and fetch second stage from http://safe-docs.live:8443/dropper.
-
-This sample intentionally contains malicious indicators for testing.
