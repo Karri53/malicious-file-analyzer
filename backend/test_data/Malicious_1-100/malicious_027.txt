@@ -1,0 +1,3 @@
+Malware config 27: beacon 185.220.101.1 and fetch second stage from http://verify-now.click:8080/dropper.
+
+This sample intentionally contains malicious indicators for testing.

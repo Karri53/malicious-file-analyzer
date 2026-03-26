@@ -1,0 +1,3 @@
+Malware config 62: beacon 103.244.72.12 and fetch second stage from http://cdn-update.zip:65000/dropper.
+
+This sample intentionally contains malicious indicators for testing.
