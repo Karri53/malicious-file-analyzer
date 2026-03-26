@@ -1,0 +1,3 @@
+URGENT incident 31: download payload from http://cdn-update.zip:8080/update and send status to security@secure-reset.top.
+
+This sample intentionally contains malicious indicators for testing.

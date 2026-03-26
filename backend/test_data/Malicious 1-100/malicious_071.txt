@@ -1,0 +1,3 @@
+IOC report 71: MD5 5d41402abc4b2a76b9719d911017c592 SHA1 a9993e364706816aba3e25717850c26c9cd0d89d SHA256 2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae. Callback URL https://paypa1-login.ru/gate.
+
+This sample intentionally contains malicious indicators for testing.
