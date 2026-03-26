@@ -1,0 +1,3 @@
+Malware config 102: beacon 103.244.72.12 and fetch second stage from http://invoice-check.cc:65000/dropper.
+
+This sample intentionally contains malicious indicators for testing.

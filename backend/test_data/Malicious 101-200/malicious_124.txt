@@ -1,0 +1,3 @@
+URGENT incident 124: download payload from http://wallet-restore.xyz:8080/update and send status to billing@invoice-check.cc.
+
+This sample intentionally contains malicious indicators for testing.
