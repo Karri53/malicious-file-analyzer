@@ -108,8 +108,8 @@ def analyze_upload():
         
         # Step 2: Extract malicious indicators from text
         extractor = IndicatorExtractor()
-        indicators = extractor.extract_all_indicators(file_data['text'])
-        
+        indicators = extractor.extract_all_indicators(file_data['extracted_text'])
+
         # Step 3: Calculate malicious score
         scorer = MaliciousScorer()
         score_result = scorer.calculate_score(indicators)
@@ -120,7 +120,7 @@ def analyze_upload():
             scan_data = {
                 'filename': file.filename,
                 'file_type': file_data['file_type'],
-                'file_size_bytes': file_data['size'],
+                'file_size_bytes': file_data['file_size'],
                 'malicious_score': score_result['score'],
                 'severity': score_result['severity'],
                 'analysis_duration_seconds': time.time() - start_time,
@@ -136,6 +136,9 @@ def analyze_upload():
             # Store individual indicators
             indicator_list = []
             for ind_type, values in indicators.items():
+                # Skip total_count - it's an int, not a list
+                if ind_type == 'total_count':
+                    continue
                 for value in values:
                     indicator_list.append({
                         'indicator_type': ind_type,
@@ -158,7 +161,7 @@ def analyze_upload():
             'score': score_result['score'],
             'severity': score_result['severity'],
             'indicators': indicators,
-            'explanation': score_result['explanation'],
+            'explanation': score_result['reasons'],  
             'analysis_time_seconds': round(time.time() - start_time, 2)
         }), 200
         
@@ -186,11 +189,12 @@ def analyze_url():
     
     Process:
     1. Receive URL from user
-    2. Validate URL
-    3. Download file from URL
+    2. Validate URL format
+    3. Download file with size/timeout limits
     4. Process and analyze file
     5. Store results in Snowflake
-    6. Return analysis results
+    6. Clean up downloaded file
+    7. Return analysis results
     
     Returns:
         JSON response with analysis results
@@ -203,18 +207,121 @@ def analyze_url():
     if not data or 'url' not in data:
         return jsonify({
             'success': False,
-            'error': 'No URL provided'
+            'error': 'No URL provided. Include "url" in request body.'
         }), 400
     
-    url = data['url']
+    url = data['url'].strip()
     
-    # TODO: Implement URL validation and download
-    # TODO: This is a placeholder - will be completed in Week 2
+    if not url:
+        return jsonify({
+            'success': False,
+            'error': 'URL cannot be empty'
+        }), 400
     
-    return jsonify({
-        'success': False,
-        'error': 'URL analysis not yet implemented. Coming in Week 2!'
-    }), 501  # 501 = Not Implemented
+    try:
+        # Step 1: Download file from URL
+        from services.url_downloader import URLDownloader
+        
+        downloader = URLDownloader(max_size_mb=10, timeout_seconds=30)
+        download_result = downloader.download_file(url)
+        
+        if not download_result['success']:
+            return jsonify({
+                'success': False,
+                'error': download_result['error']
+            }), 400
+        
+        file_path = download_result['file_path']
+        filename = download_result['filename']
+        
+        logger.info(f"Downloaded file from URL: {url} -> {filename}")
+        
+        # Step 2: Process file to extract text
+        processor = FileProcessor()
+        file_data = processor.process_file(file_path)
+        
+        # Step 3: Extract malicious indicators from text
+        extractor = IndicatorExtractor()
+        indicators = extractor.extract_all_indicators(file_data['extracted_text'])
+
+        # Step 4: Calculate malicious score
+        scorer = MaliciousScorer()
+        score_result = scorer.calculate_score(indicators)
+        
+        # Step 5: Store results in Snowflake
+        with get_snowflake_client() as sf:
+            # Prepare scan data
+            scan_data = {
+                'filename': filename,
+                'file_type': file_data['file_type'],
+                'file_size_bytes': download_result['size'],
+                'malicious_score': score_result['score'],
+                'severity': score_result['severity'],
+                'analysis_duration_seconds': time.time() - start_time,
+                'source_method': 'url',
+                'user_ip': request.remote_addr,
+                'processing_status': 'completed'
+            }
+            
+            # Insert scan result and get scan ID
+            scan_id = sf.insert_scan_result(scan_data)
+            logger.info(f"Stored URL scan result with ID: {scan_id}")
+            
+            # Store URL source metadata
+            url_metadata = {
+                'original_url': url,
+                'content_type': download_result['content_type'],
+                'download_timestamp': time.time()
+            }
+            sf.insert_url_source(scan_id, url_metadata)
+            
+            # Store individual indicators
+            indicator_list = []
+            for ind_type, values in indicators.items():
+                # Skip total_count - it's an int, not a list
+                if ind_type == 'total_count':
+                    continue
+                for value in values:
+                    indicator_list.append({
+                        'indicator_type': ind_type,
+                        'indicator_value': value,
+                        'confidence': 1.0
+                    })
+            
+            if indicator_list:
+                sf.insert_indicators(scan_id, indicator_list)
+                logger.info(f"Stored {len(indicator_list)} indicators")
+        
+        # Step 6: Clean up downloaded file  ← Next section should be this!
+        downloader.cleanup_file(file_path)
+        
+        # Step 7: Return results to user
+        return jsonify({
+            'success': True,
+            'scan_id': scan_id,
+            'filename': filename,
+            'url': url,
+            'score': score_result['score'],
+            'severity': score_result['severity'],
+            'indicators': indicators,
+            'explanation': score_result['reasons'],  
+            'analysis_time_seconds': round(time.time() - start_time, 2)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"URL analysis failed: {str(e)}")
+        
+        # Clean up downloaded file if it exists
+        if 'file_path' in locals() and os.path.exists(file_path):
+            try:
+                downloader.cleanup_file(file_path)
+            except:
+                pass
+        
+        return jsonify({
+            'success': False,
+            'error': f'Analysis failed: {str(e)}'
+        }), 500
 
 
 # ============================================================================

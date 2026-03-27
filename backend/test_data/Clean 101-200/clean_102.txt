@@ -1,0 +1,3 @@
+Student handout #102. Office hours moved to Tuesday. Internal server: 8.8.8.8. Visit https://support.company.com/resources.
+
+This is a benign sample created for regex validation.

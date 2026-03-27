@@ -1,213 +1,109 @@
 # AWS Configuration Guide
 
-## Overview
-This guide walks through setting up all required AWS services for the Malicious File Analyzer.
+## 1. Overview
 
-## Prerequisites
-- AWS Account (via University or AWS Educate)
-- AWS CLI installed
-- IAM user with administrative permissions
+### What the AWS S3 Client Does
+The AWS S3 client provides file storage operations for the Malicious File Analyzer backend. Its purpose is to upload files to Amazon S3, download them when needed, and delete them after processing is complete.
 
-## Backend S3 Client Configuration
+The project currently supports two storage client modes:
 
-The backend uses a factory pattern to choose between a mock S3 client and a real AWS S3 client.
+- `MockS3Client` for local development without AWS credentials
+- `RealS3Client` for real AWS S3 operations when credentials are available
 
-### Client Selection Logic
-- If `AWS_ACCESS_KEY_ID` is present in the environment, the backend uses `RealS3Client`
-- If AWS credentials are not present, the backend falls back to `MockS3Client`
+This allows development to continue even before AWS access is granted.
 
-This allows local development and testing to continue even before real AWS credentials are provided.
+### Why We Need It
+The backend needs temporary file storage because uploaded files may need to be processed after they are received. Instead of relying only on local storage, S3 provides a centralized place to store files temporarily.
 
-### Relevant Backend Files
+Using S3 is useful because it:
+
+- supports temporary upload storage
+- works better for deployment than local-only storage
+- allows cleanup using lifecycle policies
+- gives the backend a consistent interface for file operations
+
+### How It Integrates with the Backend
+The backend does not directly choose between mock storage and real AWS storage in multiple places. Instead, it uses a factory function called `get_s3_client()` in `backend/services/aws_client.py`.
+
+That function:
+
+- returns `RealS3Client` if AWS credentials are detected
+- otherwise returns `MockS3Client`
+
+This keeps the rest of the backend independent from AWS-specific implementation details.
+
+---
+
+## 2. Code Architecture
+
+### File Structure
+Relevant files for the S3 integration are:
+
 - `backend/services/aws_client.py`
 - `backend/services/real_aws_client.py`
-- `backend/test_mock_s3.py`
 
-### Required Environment Variables
-Add these values to `.env` when AWS credentials are available:
+### `aws_client.py`
+This file contains two important parts:
 
-```env
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_DEFAULT_REGION=us-east-1
-S3_BUCKET_NAME=malware-analyzer-uploads-temp-pvamu
+1. `MockS3Client`
+2. `get_s3_client()`
 
-## Step 1: Configure AWS CLI
-```bash
-aws configure
-AWS Access Key ID: [Your key]
-AWS Secret Access Key: [Your secret]
-Default region name: us-east-1
-Default output format: json
-```
+`MockS3Client` simulates S3 operations using the local filesystem so development and testing can continue without AWS credentials.
 
-## Step 2: Create S3 Buckets
+`get_s3_client()` is the factory function that decides which client to return.
 
-### Create Upload Bucket
-```bash
-aws s3 mb s3://malware-analyzer-uploads-temp-pvamu
-```
+### Factory Pattern in `aws_client.py`
+The project uses a factory pattern so the backend can request an S3 client without caring whether it is mock or real.
 
-### Create Email Bucket
-```bash
-aws s3 mb s3://malware-analyzer-emails-pvamu
-```
+Current logic:
 
-### Create Results Bucket
-```bash
-aws s3 mb s3://malware-analyzer-results-pvamu
-```
+```python
+def get_s3_client():
+    aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID')
 
-### Configure Lifecycle Policy (Auto-delete after 24hrs)
+    if aws_access_key:
+        from .real_aws_client import RealS3Client
+        logger.info("AWS credentials detected - using RealS3Client")
+        return RealS3Client()
+    else:
+        logger.info("No AWS credentials - using MockS3Client")
+        return MockS3Client()
 
-Create file `s3-lifecycle.json`:
-```json
-{
-  "Rules": [
-    {
-      "Id": "DeleteAfter24Hours",
-      "Status": "Enabled",
-      "ExpirationInDays": 1,
-      "Filter": { "Prefix": "" }
-    }
-  ]
-}
-```
 
-Apply to upload bucket:
-```bash
-aws s3api put-bucket-lifecycle-configuration \
-  --bucket malware-analyzer-uploads-temp-pvamu \
-  --lifecycle-configuration file://s3-lifecycle.json
-```
+        **Explanation:**
+The `get_s3_client()` function implements a factory pattern that determines which storage client the backend should use at runtime. It checks whether the environment variable `AWS_ACCESS_KEY_ID` exists. If it does, the system assumes AWS credentials are available and returns an instance of `RealS3Client`, which uses the `boto3` library to interact with Amazon S3.
 
-## Step 3: Configure IAM Permissions
+If the environment variable is not present, the function returns `MockS3Client`, which simulates S3 behavior using the local filesystem. This allows developers to test file upload, download, and deletion logic without needing actual AWS access.
 
-Create `iam-policy.json`:
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:DeleteObject",
-        "s3:ListBucket"
-      ],
-      "Resource": [
-        "arn:aws:s3:::malware-analyzer-*/*",
-        "arn:aws:s3:::malware-analyzer-*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ses:SendEmail",
-        "ses:SendRawEmail"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-```
+This design keeps the rest of the backend code independent from AWS-specific implementation details. Any part of the system that needs file storage simply calls `get_s3_client()` and uses the returned object, regardless of whether it is a mock or real implementation. This improves modularity, simplifies testing, and makes the transition to real AWS services seamless once credentials are available.
 
-Create policy:
-```bash
-aws iam create-policy \
-  --policy-name MalwareAnalyzerPolicy \
-  --policy-document file://iam-policy.json
-```
 
-## Step 4: Set Up AWS SES
+## Lambda Email Processing Integration
 
-### Verify Domain
-1. Go to AWS Console → SES → Verified Identities
-2. Click "Create Identity"
-3. Select "Domain"
-4. Enter your domain name
-5. Add provided DNS records to your domain
+The project includes an AWS Lambda function in `lambda/email_processor.py` that processes incoming email messages stored in S3. The function is triggered by an S3 `PUT` event and reads the raw email object from the configured email bucket.
 
-### Create Receipt Rule
-1. SES → Email Receiving → Rule Sets
-2. Create rule set: `malware-analyzer-rules`
-3. Add rule:
-   - Recipients: `analyze@yourdomain.com`
-   - Actions:
-     - S3: Store in malware-analyzer-emails-pvamu
-     - Lambda: Trigger email-processor function
+After loading the email, the Lambda function parses attachments, filters them using allowed file types and attachment size limits, and sends each valid attachment to the backend API endpoint:
 
-## Step 5: Deploy Lambda Function
+```text
+POST /api/analyze/upload
 
-Create deployment package:
-```bash
-cd lambda
-pip install requests -t .
-zip -r email-processor.zip .
-```
+This is important because the backend endpoint /api/analyze/email is not yet implemented, so the Lambda function currently relies on the upload analysis endpoint for file scanning. The upload endpoint processes the file, extracts text and indicators, calculates a maliciousness score, stores the results in Snowflake, and returns the analysis response.
 
-Deploy:
-```bash
-aws lambda create-function \
-  --function-name email-processor \
-  --runtime python3.11 \
-  --role arn:aws:iam::ACCOUNT_ID:role/lambda-role \
-  --handler email_processor.lambda_handler \
-  --zip-file fileb://email-processor.zip \
-  --timeout 300 \
-  --environment Variables="{BACKEND_API_URL=https://your-backend.com/api}"
-```
+The Lambda function uses these environment variables:
 
-## Step 6: Launch EC2 Instance
-```bash
-aws ec2 run-instances \
-  --image-id ami-0c55b159cbfafe1f0 \
-  --instance-type t3.micro \
-  --key-name your-key-pair \
-  --security-groups malware-analyzer-sg \
-  --user-data file://ec2-userdata.sh
-```
+BACKEND_API_URL
+ALLOWED_FILE_TYPES
+MAX_ATTACHMENT_SIZE_MB
+MAX_ATTACHMENTS_PER_EMAIL
+SENDER_EMAIL
 
-### Security Group Rules
-```bash
-# Allow HTTP from anywhere
-aws ec2 authorize-security-group-ingress \
-  --group-id sg-xxxxx \
-  --protocol tcp \
-  --port 80 \
-  --cidr 0.0.0.0/0
+After processing, the Lambda function attempts to move the original email object to a processed or failed location in S3 and sends a results email through Amazon SES.
 
-# Allow HTTPS from anywhere
-aws ec2 authorize-security-group-ingress \
-  --group-id sg-xxxxx \
-  --protocol tcp \
-  --port 443 \
-  --cidr 0.0.0.0/0
-```
 
-## Troubleshooting
+## Deployment Notes and Issues Encountered
 
-### S3 Access Denied
-- Check IAM permissions
-- Verify bucket policy
-- Ensure bucket exists
-
-### SES Email Not Received
-- Verify domain is confirmed
-- Check receipt rule is active
-- Look at CloudWatch logs
-
-### Lambda Function Errors
-- Check CloudWatch logs
-- Verify environment variables
-- Test function manually in console
+- The original deployment commands were written for macOS/Linux (`source`, `cp`) and were updated for Windows PowerShell compatibility.
+- The Lambda function depends on a reachable backend API URL. Local or deployed testing will fail if `BACKEND_API_URL` is incorrect or the Flask backend is not running.
+- The Lambda function expects an S3 event with `Records[0].s3.bucket.name` and `Records[0].s3.object.key`, so local testing requires a realistic S3 event JSON payload.
+- The current backend endpoint `/api/analyze/email` is not implemented yet. Lambda currently sends attachments to `/api/analyze/upload` instead.
+- The S3 key move logic in `email_processor.py` uses string replacement for `/incoming/`, so the exact S3 object key format should be verified during deployment testing.

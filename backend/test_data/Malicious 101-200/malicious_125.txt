@@ -1,0 +1,3 @@
+URGENT incident 125: download payload from http://urgent-auth.biz:1337/update and send status to security@secure-reset.top.
+
+This sample intentionally contains malicious indicators for testing.

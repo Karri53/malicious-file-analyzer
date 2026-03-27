@@ -1,0 +1,3 @@
+IOC report 76: MD5 5d41402abc4b2a76b9719d911017c592 SHA1 6b86b273ff34fce19d6b804eff5a3f5747ada4ea SHA256 4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce. Callback URL https://invoice-check.cc/gate.
+
+This sample intentionally contains malicious indicators for testing.

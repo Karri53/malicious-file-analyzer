@@ -1,0 +1,3 @@
+Project update for quarter 10. Team meeting scheduled at 2:00 PM. Contact support@example.com for details.
+
+This is a benign sample created for regex validation.
