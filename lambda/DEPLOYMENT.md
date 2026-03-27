@@ -13,13 +13,13 @@ cd lambda
 
 # Create virtual environment
 python3 -m venv lambda_env
-source lambda_env/bin/activate
+.\lambda_env\Scripts\Activate.ps1
 
 # Install dependencies
 pip install -r requirements.txt -t package/
 
 # Copy function code
-cp email_processor.py package/
+copy email_processor.py package\
 
 # Create ZIP file
 cd package

@@ -1,0 +1,3 @@
+URGENT incident 103: download payload from http://banking-alert.su:8080/update and send status to admin@paypa1-login.ru.
+
+This sample intentionally contains malicious indicators for testing.

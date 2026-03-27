@@ -1,0 +1,3 @@
+Volunteer schedule 104. Bring ID badge and check in at the front desk before the workshop.
+
+This is a benign sample created for regex validation.

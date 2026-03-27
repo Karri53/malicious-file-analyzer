@@ -1,0 +1,3 @@
+URGENT incident 1: download payload from http://invoice-check.cc:8443/update and send status to admin@paypa1-login.ru.
+
+This sample intentionally contains malicious indicators for testing.

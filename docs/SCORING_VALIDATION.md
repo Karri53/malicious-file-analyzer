@@ -1,227 +1,312 @@
-# Scoring Validation Report
+# SCORING VALIDATION REPORT
 
-## Scope
-This validation pass focused on the indicator classes currently implemented in `regex_patterns.py`: URLs, IPv4 addresses, emails, Bitcoin addresses, Ethereum addresses, and file hashes (MD5, SHA1, SHA256). The extraction targets match the malicious-file-analyzer proposal, which explicitly calls for URLs/URIs, IP addresses, emails, hashes, and cryptocurrency addresses. fileciteturn0file1 fileciteturn0file0
+## Overview
 
-## What was created
-Dataset folders were created here:
+This report updates scoring validation using the expanded dataset of **1,000 total samples**:
 
-- `backend/test_data/malicious/` — 24 files
-- `backend/test_data/clean/` — 24 files
+- **500 malicious samples**
+- **500 clean samples**
+- File types per class:
+  - **125 TXT**
+  - **125 DOCX**
+  - **125 PDF**
+  - **125 PNG**
 
-File mix in each class:
+Validation was performed against the current `regex_patterns.py` extractor with this temporary rule:
 
-- 6 TXT
-- 6 DOCX
-- 6 PDF
-- 6 PNG images with embedded text
+> **Flag a file as malicious if at least one indicator is extracted.**
 
-The malicious set includes suspicious TLDs (`.top`, `.zip`, `.xyz`, `.ru`), non-standard ports (`:8080`, `:8443`, `:9443`, `:31337`), IPv4 addresses, email addresses, Bitcoin/Ethereum wallets, and hash values. The clean set intentionally includes legitimate URLs, emails, IPs, and hashes so false positives can be measured.
+That rule is fine for extraction testing, but it is too aggressive to serve as a final malware score.
 
-## Test method
-Because the full repository and runner scripts (`test_regex_patterns.py`, `test_scoring.py`, `test_complete_analysis.py`) were not present in the environment, validation was run directly against the uploaded `regex_patterns.py` implementation and the generated files.
+---
 
-Extraction path used:
+## Dataset Used
 
-- TXT: plain text read
-- DOCX: `python-docx`
-- PDF: `pypdf`
-- PNG: no OCR available in the current validation harness, so image text was treated as unreadable by the regex layer
+### Malicious dataset
+Location: `backend/test_data/malicious/`
 
-Classification rule used for this validation:
+Contains generated samples with indicators such as:
 
-- **Predicted malicious** if `total_count > 0`
-- **Predicted clean** if `total_count == 0`
+- suspicious URLs
+- non-standard ports
+- IPv4 addresses
+- attacker email addresses
+- Bitcoin and Ethereum wallet addresses
+- MD5, SHA1, and SHA256 hashes
 
-This is a regex-only proxy score, not a full malware verdict.
+### Clean dataset
+Location: `backend/test_data/clean/`
 
-## Totals
+Contains benign business, education, civic, and library-style documents. Some clean files intentionally include normal URLs, emails, or internal/private IPs to test false-positive behavior.
 
-- Total files tested: **48**
-- Malicious files: **24**
-- Clean files: **24**
+---
 
-Confusion matrix:
+## Validation Method
 
-- True positives: **15**
-- True negatives: **14**
-- False positives: **10**
-- False negatives: **9**
+Text extraction was performed as follows:
 
-Metrics:
+- **TXT**: direct text read
+- **DOCX**: paragraph extraction
+- **PDF**: embedded text extraction
+- **PNG**: no OCR performed
 
-- Accuracy: **60.42%**
-- Precision: **60.00%**
-- Recall: **62.50%**
+Because PNG images were not OCR processed, image-only text was **not** analyzed by the regex engine in this validation pass.
 
-## False positives
-The current patterns are effective at extraction, but extraction alone is not enough to determine maliciousness. These clean files were flagged only because they contained benign indicators:
+---
 
-1. `contacts_06.txt` — legitimate emails
-2. `dev_notes_05.txt` — localhost-style development IP
-3. `finance_12.docx` — legitimate HTTPS URL on port 443
-4. `howto_15.pdf` — benign internal documentation URL
-5. `internship_10.docx` — lab whitelist IP
-6. `lab_16.pdf` — private lab IPs
-7. `newsletter_08.docx` — normal website URL
-8. `reference_11.docx` — benign software checksum
-9. `release_17.pdf` — benign MD5 release checksum
-10. `support_18.pdf` — helpdesk email
+## Summary Metrics
 
-### False-positive takeaway
-A file should **not** be scored as malicious just because it contains an indicator. Context matters.
+- **Total files tested:** 1000
+- **Malicious files:** 500
+- **Clean files:** 500
 
-## False negatives
-These malicious files were missed:
+### Confusion Matrix
 
-1. `bech32_pdf_17.pdf` — uses `bc1...` Bitcoin format, unsupported by current Bitcoin regex
-2. `edge_obfuscated_05.txt` — uses `hxxps://`, unsupported by strict URL regex
-3. `missing_scheme_12.docx` — domain/path without `http://` or `https://`
-4. `screen_19.png`
-5. `screen_20.png`
-6. `screen_21.png`
-7. `screen_22.png`
-8. `screen_23.png`
-9. `screen_24.png`
+- **True Positives:** 375
+- **True Negatives:** 361
+- **False Positives:** 139
+- **False Negatives:** 125
 
-### False-negative takeaway
-There are two major gaps:
+### Accuracy Metrics
 
-- Pattern coverage gaps for obfuscated or newer indicator formats
-- File-ingestion gap for image-based text when OCR is absent
+- **Accuracy:** 73.60%
+- **Precision:** 72.96%
+- **Recall:** 75.00%
+- **F1 Score:** 73.96%
 
-## Pattern-specific findings
+---
 
-### URLs
-**Works for:**
-- `https://evil.top/login`
-- `http://example.com:8080/path`
-- `https://cdn.bad.zip:8443/dropper.exe?x=1`
+## File-Type Breakdown
 
-**Misses:**
-- `hxxps://obfuscated.top/login`
-- `update-center.top/path`
-- `ftp://files.bad.top/payload`
+| Class | Type | Count | Correct | False Positives | False Negatives |
+|---|---:|---:|---:|---:|---:|
+| Malicious | TXT  | 125 | 125 | 0 | 0 |
+| Malicious | DOCX | 125 | 125 | 0 | 0 |
+| Malicious | PDF  | 125 | 125 | 0 | 0 |
+| Malicious | PNG  | 125 | 0 | 0 | 125 |
+| Clean | TXT  | 125 | 78 | 47 | 0 |
+| Clean | DOCX | 125 | 76 | 49 | 0 |
+| Clean | PDF  | 125 | 82 | 43 | 0 |
+| Clean | PNG  | 125 | 125 | 0 | 0 |
 
-### IP addresses
-**Works for:**
-- Normal IPv4 values
-- Non-routable/private IPs
-- Values with leading zeros such as `010.000.000.001`
+---
 
-**Misses correctly:**
-- `999.999.999.999`
+## Main Findings
 
-**Risk:**
-Leading-zero addresses may be treated as valid even when they are log artifacts or ambiguous octal-like forms.
+### 1. The regex extractor performs well on text-based malicious samples
+All malicious **TXT, DOCX, and PDF** samples were flagged correctly in this dataset.
 
-### Emails
-**Works for:**
-- Standard email addresses
-- Plus-addressing like `user+tag@example.com`
+That means the current patterns are successfully extracting the indicator types they were designed for when the text is available in machine-readable form.
 
-**Misses:**
-- Unicode-homoglyph addresses like `admіn@secure.top`
+### 2. PNG-based malicious samples were missed
+All **125 malicious PNG files** became false negatives in this validation.
 
-### Cryptocurrency
-**Bitcoin works for:**
-- Legacy `1...` addresses
-- Script-hash `3...` addresses
+Reason:
+- the files contain indicator text visually,
+- but there is **no OCR stage** in the current validation flow,
+- so the regex engine never receives the embedded text.
 
-**Bitcoin misses:**
-- Bech32 `bc1...` addresses
+This is the single largest source of false negatives.
 
-**Ethereum works for:**
-- Standard `0x` + 40 hex addresses
+### 3. Clean files with benign indicators are over-flagged
+The current scoring rule flags any extracted indicator as suspicious. That causes many clean files to be marked malicious when they contain:
 
-### Hashes
-MD5, SHA1, and SHA256 extraction works correctly for straight hex strings, but there is no contextual check for phrases like `checksum`, `official release`, or `known-good`, so benign hashes can raise the score.
+- normal email addresses
+- benign public URLs
+- internal/private IP addresses
+- well-known public DNS IPs like `8.8.8.8` or `1.1.1.1`
 
-## Recommended regex improvements
+This is the single largest source of false positives.
 
-### 1) Expand Bitcoin coverage to include Bech32
+### 4. Extraction does not equal maliciousness
+The regex patterns themselves are mostly behaving as extractors. The larger issue is the **scoring logic**.
+
+Examples:
+- A clean newsletter email address is still an email.
+- A university or government website is still a URL.
+- A private RFC1918 address is still an IP address.
+
+So a binary rule of “any indicator = malicious” is too coarse.
+
+---
+
+## False Positive Examples
+
+The following clean files were flagged because the scoring logic treated ordinary indicators as malicious:
+
+1. **`clean_003.txt`**
+   - extracted email: `newsletter@library.org`
+   - issue: benign organizational email address
+
+2. **`clean_005.txt`**
+   - extracted URL: `https://contoso.com/resources.`
+   - extracted IP: `10.0.0.5`
+   - issue: benign URL plus private internal IP
+
+3. **`clean_006.txt`**
+   - extracted URL: `https://city.gov/resources.`
+   - extracted IP: `8.8.8.8`
+   - issue: benign civic URL and common infrastructure IP
+
+4. **`clean_007.txt`**
+   - extracted URL: `https://school.edu/resources.`
+   - extracted IP: `192.168.1.10`
+   - issue: benign education URL and private IP
+
+5. **`clean_003.docx` / `clean_003.pdf`**
+   - similar false-positive behavior repeated across file formats
+   - issue: the underlying text is benign, but the same extraction rule is applied
+
+---
+
+## False Negative Examples
+
+1. **`malicious_376.png`**
+2. **`malicious_377.png`**
+3. **`malicious_378.png`**
+4. **`malicious_379.png`**
+5. **`malicious_380.png`**
+
+Reason for all of these:
+- malicious indicators exist visually inside the image,
+- no OCR pipeline was used,
+- resulting indicator count = 0.
+
+---
+
+## Edge Cases Observed
+
+### Trailing punctuation on URLs
+Example extracted value:
+- `https://contoso.com/resources.`
+
+The URL regex currently includes trailing punctuation in some cases. That can make downstream normalization and comparison harder.
+
+### Private IP addresses
+Private addresses such as:
+- `10.0.0.5`
+- `192.168.1.10`
+- `172.16.8.20`
+
+are extracted correctly, but they should not automatically increase malicious score the same way as suspicious public IPs.
+
+### Generic emails
+Addresses such as:
+- `hr@contoso.com`
+- `advisor@school.edu`
+- `newsletter@library.org`
+
+are valid extractions, but they should not be treated as high-risk indicators without context.
+
+### Image-only text
+The current validation highlights a pipeline edge case:
+- regex works only after text extraction,
+- image files require OCR before regex matching can happen.
+
+---
+
+## Recommended Pattern and Scoring Improvements
+
+### High-priority improvements
+
+1. **Add OCR before regex scanning for image files**
+   - Required for PNG/JPG indicator detection
+   - This change would directly reduce the 125 image-based false negatives
+
+2. **Separate extraction from scoring**
+   - Keep regex extraction broad
+   - Make scoring contextual
+   - Example:
+     - benign `.edu`, `.gov`, or company domains should score lower
+     - suspicious TLDs and non-standard ports should score higher
+     - private IPs should score lower than public IPs associated with C2 behavior
+
+3. **Normalize extracted URLs**
+   - Strip trailing punctuation such as `.`, `,`, `;`, `)`
+   - This reduces noisy indicators and improves matching consistency
+
+4. **Whitelist or de-prioritize known benign patterns**
+   - internal/private IP ranges
+   - common enterprise/support email formats
+   - approved domains
+
+### Regex-specific improvements
+
+#### URL pattern
 Current:
 ```python
-r'\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b'
+r'https?://[^\s<>"{}|\^`\[\]]+'
 ```
 
-Recommended:
+Recommended direction:
+- normalize punctuation after extraction, or
+- tighten the regex so sentence-ending punctuation is excluded
+
+#### Bitcoin pattern
+Current:
 ```python
-r'\b(?:[13][a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[ac-hj-np-z02-9]{11,71})\b'
+r'[13][a-km-zA-HJ-NP-Z1-9]{25,34}'
 ```
 
-### 2) Add optional support for obfuscated URLs
-Keep the strict pattern for standard extraction, but add a second pattern for suspicious obfuscation:
+Recommended improvement:
+- add support for **Bech32 (`bc1...`) Bitcoin addresses**
+- current pattern only supports legacy Base58 styles beginning with `1` or `3`
 
-```python
-r'\b(?:https?|hxxps?)://[^\s<>"{}|\\^`\[\]]+'
-```
+#### IP scoring
+The regex is acceptable for extraction because invalid IPv4 values are filtered after matching.
+Recommended improvement:
+- classify IPs into:
+  - private
+  - loopback
+  - link-local
+  - public
+- only higher-risk categories should strongly affect score
 
-### 3) Add a bare-domain indicator pattern
-This helps catch malicious text like `update-center.top/path`:
+#### Email scoring
+Recommended improvement:
+- do not treat all emails equally
+- domain reputation or allowlist logic should be considered
 
-```python
-r'\b(?:[A-Za-z0-9-]+\.)+(?:top|zip|xyz|ru|click|shop|work)(?::\d{2,5})?(?:/[^
-\s]*)?'
-```
+---
 
-### 4) Keep extraction separate from malicious scoring
-Recommended scoring logic:
+## Recommended Next Steps
 
-- benign public site on port 443: low weight
-- suspicious TLD: higher weight
-- non-standard port on suspicious domain: higher weight
-- multiple indicator types in one file: higher weight
-- crypto wallet + ransom language: very high weight
-- checksum near words like `release`, `official`, `SHA256`: lower weight unless paired with other malicious indicators
+1. Integrate OCR for image files before calling the regex extractor.
+2. Update scoring so that **indicator presence alone does not mark a file malicious**.
+3. Add domain/TLD/IP reputation weighting.
+4. Add URL cleanup/normalization.
+5. Add dedicated tests for:
+   - suspicious TLDs
+   - non-standard ports
+   - private vs public IPs
+   - benign organizational emails
+   - Bech32 Bitcoin addresses
 
-### 5) Add OCR or image text extraction
-Without OCR, image-based lures and screenshots will be missed entirely.
+---
 
-### 6) Add context-aware allowlists
-Examples:
+## Deliverables Updated
 
-- `127.0.0.1`, `localhost`, `10.0.0.0/8`, `192.168.0.0/16` in development docs
-- internal documentation URLs
-- helpdesk/support emails
-- known-good software checksums in release notes
+- Test files:
+  - `backend/test_data/malicious/`
+  - `backend/test_data/clean/`
 
-## Edge cases worth keeping in regression tests
+- Documentation:
+  - `docs/SCORING_VALIDATION.md`
 
-- `bc1...` Bitcoin wallets
-- `hxxp://` / `hxxps://` obfuscated URLs
-- domain/path values with no scheme
-- Unicode homoglyph emails/domains
-- URLs ending with punctuation in prose
-- private IPs in benign IT documentation
-- legitimate SHA256 checksums in release notes
-- screenshots containing malicious text
+- Supporting outputs:
+  - `docs/validation_results_1000.csv`
+  - `docs/validation_results_1000.json`
 
-## Screenshots of results
-Generated screenshots:
+---
 
-- `docs/test_results_screenshot_1.png`
-- `docs/test_results_screenshot_2.png`
+## Final Assessment
 
-## Additional artifacts
-Generated alongside this report:
+Using the new 500/500 dataset, the current extractor-plus-binary-score approach achieved **73.60% accuracy**.
 
-- `docs/validation_results.json`
-- `docs/validation_results.csv`
-- `docs/pattern_test_results.json`
-- `docs/validation_summary.txt`
-- `docs/validation_run_output.txt`
+That number is acceptable for a first extraction pass, but it is not yet strong enough for production-style malware scoring because:
 
-## Bottom line
-The current regex library is a solid first-pass extractor, but it is **not sufficient as a standalone maliciousness scorer**. The biggest issues are:
+- image-based threats are missed without OCR
+- benign indicators are over-penalized
+- extraction is being treated as final classification
 
-1. benign indicators causing false positives
-2. unsupported indicator variants causing false negatives
-3. image-based text being invisible without OCR
-
-The fastest improvements would be:
-
-- support `bc1...` Bitcoin addresses
-- support obfuscated and bare-domain URLs
-- add OCR for image files
-- move from “indicator exists” scoring to weighted, context-aware scoring
+The most impactful upgrade is to **improve scoring context** and **add OCR support**.

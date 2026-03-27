@@ -1,0 +1,3 @@
+Library event memo 78. Registration is open and refreshments will be served in Room 204.
+
+This is a benign sample created for regex validation.
