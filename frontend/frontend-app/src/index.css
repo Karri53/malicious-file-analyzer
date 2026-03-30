@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gold: #D0BC77;
+  --sage: #77997B;
+  --cream: #EDEDCD;
+  --bg: #0A0906;
+  --surface: #111009;
+  --surface2: #181510;
+  --border: #252015;
+  --red: #E05555;
+  --text: #EEE8D5;
+  --muted2: #7A7260;
+}
+
+body {
+  background-color: #0A0906;
+  color: #EEE8D5;
+  font-family: 'DM Sans', sans-serif;
+}
