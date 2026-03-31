@@ -3,7 +3,7 @@
 > **NSA Senior Design Project | Prairie View A&M University | Spring 2026**  
 > A cloud-based security platform for safely analyzing suspicious email attachments without exposing users to malware.
 
-[![Project Status](https://img.shields.io/badge/Status-Week%204%20Complete-green)](https://github.com/Karri53/malicious-file-analyzer)
+[![Project Status](https://img.shields.io/badge/Status-Week%205%20In%20Progress-yellow)](https://github.com/Karri53/malicious-file-analyzer)
 [![Timeline](https://img.shields.io/badge/Timeline-7%20Weeks%20(Mar%202--Apr%2017)-blue)](https://github.com/Karri53/malicious-file-analyzer)
 [![Team](https://img.shields.io/badge/Team-Team%20Opulence-purple)](https://github.com/Karri53/malicious-file-analyzer)
 
@@ -202,8 +202,8 @@ AWS CLI           - Cloud resource management
 
 **Last Updated:** March 30, 2026, 12:00 AM CST  
 **Days Elapsed:** 28 / 49 (57%)  
-**Current Week:** Week 4 - COMPLETED ✅  
-**Next Week:** Week 5 - Polish & Testing  
+**Current Week:** Week 5 - Frontend Development & AWS Deployment  
+**Next Week:** Week 6 - Integration Testing & Polish  
 
 ### ✅ Week 1 COMPLETED (March 2-8)
 
@@ -373,6 +373,33 @@ AWS CLI           - Cloud resource management
 - Frontend structure: scaffolded and ready for Week 5 implementation
 
 **Status:** Week 4 COMPLETE - 57% overall (28/49 days)
+
+---
+
+### ⏳ Week 5 IN PROGRESS (March 30 - April 5)
+
+**Focus:** Frontend Development, AWS Lambda Deployment & Integration
+
+**Planned Deliverables:**
+- 🔄 **Lambda Email Processor Deployment** (Karrington)
+  - Deploy to AWS Lambda with SES integration
+  - Test email forwarding workflow
+  - Monitor production logs
+- 🔄 **React Frontend Implementation** (Kendall)
+  - All 5 pages: Upload, URL, Email, Results, History
+  - API integration with backend
+  - Tailwind CSS styling + responsive design
+- 🔄 **Frontend Testing** (LeMikkos)
+  - Test all submission methods
+  - Cross-browser compatibility testing
+  - Bug documentation and prioritization
+- 🔄 **Infrastructure Support** (Brandon)
+  - AWS deployment assistance
+  - Backend performance optimization
+  - Production environment setup
+
+**Target Completion:** April 5, 2026
+**Expected Progress:** 71% (35/49 days)
 
 ---
 
@@ -721,13 +748,13 @@ This tool provides automated malware analysis for educational and research purpo
 - Days Remaining: 21
 - Progress: 57% complete
 
-**Code Statistics:** *(Updated Week 4)*
-- Total Lines of Code: ~2,800
+**Code Statistics:** *(Updated Week 5)*
+- Total Lines of Code: ~3,200+ (target)
 - Python Files: 14
-- JavaScript Files: 0 (Week 5 implementation)
+- JavaScript/React Files: 15+ (Week 5 implementation)
 - Test Files: 200+ (clean + malicious datasets)
-- Documentation Files: 10
-- Total Commits: 50+
+- Documentation Files: 11
+- Total Commits: 60+
 - Contributors: 4 active
 
 **Latest Update:**
