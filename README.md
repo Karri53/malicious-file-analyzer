@@ -3,7 +3,7 @@
 > **NSA Senior Design Project | Prairie View A&M University | Spring 2026**  
 > A cloud-based security platform for safely analyzing suspicious email attachments without exposing users to malware.
 
-[![Project Status](https://img.shields.io/badge/Status-Week%201%20In%20Progress-yellow)](https://github.com/Karri53/malicious-file-analyzer)
+[![Project Status](https://img.shields.io/badge/Status-Week%204%20Complete-green)](https://github.com/Karri53/malicious-file-analyzer)
 [![Timeline](https://img.shields.io/badge/Timeline-7%20Weeks%20(Mar%202--Apr%2017)-blue)](https://github.com/Karri53/malicious-file-analyzer)
 [![Team](https://img.shields.io/badge/Team-Team%20Opulence-purple)](https://github.com/Karri53/malicious-file-analyzer)
 
@@ -200,10 +200,10 @@ AWS CLI           - Cloud resource management
 
 ## 📊 Current Progress
 
-**Last Updated:** March 15, 2026, 11:45 PM CST  
-**Days Elapsed:** 14 / 49 (29%)  
-**Current Week:** Week 2 - COMPLETED ✅  
-**Next Week:** Week 3 - Email Integration & URL Analysis  
+**Last Updated:** March 30, 2026, 12:00 AM CST  
+**Days Elapsed:** 28 / 49 (57%)  
+**Current Week:** Week 4 - COMPLETED ✅  
+**Next Week:** Week 5 - Polish & Testing  
 
 ### ✅ Week 1 COMPLETED (March 2-8)
 
@@ -323,6 +323,57 @@ AWS CLI           - Cloud resource management
 - Documentation: 1,000+ lines across architecture docs
 
 **Status:** Week 3 COMPLETE - 43% overall (21/49 days)
+
+---
+
+### ✅ Week 4 COMPLETED (March 23-29)
+
+**Focus:** Documentation, API Reference, Lambda Integration & Team Coordination
+
+**Completed Deliverables:**
+- ✅ **API Reference Documentation** (Karrington) - `docs/API_REFERENCE.md`
+  - Complete endpoint reference for all 5 API routes
+  - Request/response examples with Axios code samples
+  - Error response formats documented
+  - Ready for frontend team to use during Week 5
+- ✅ **Backend Improvements Review** (Brandon) - `docs/BACKEND_IMPROVEMENTS.md`
+  - File type and size validation recommendations
+  - Specific exception handling improvements
+  - Temporary directory configuration guidance
+  - Email endpoint implementation roadmap
+- ✅ **Lambda Deployment Guide Updated** (Brandon) - `lambda/DEPLOYMENT.md`
+  - Added Windows PowerShell support for deployment packaging
+  - Step-by-step guide for AWS Console setup
+  - Environment variable configuration instructions
+- ✅ **AWS Configuration Documentation** (Brandon) - `docs/AWS_CONFIGURATION.md`
+  - S3 client architecture explained (Mock vs Real)
+  - Factory pattern integration guide
+  - Credential setup instructions for team members
+- ✅ **Snowflake Setup Guide** - `docs/SNOWFLAKE_SETUP_GUIDE.md`
+  - Installation and connection steps for team members
+  - MFA authentication walkthrough
+  - Schema and table reference
+- ✅ **Team Onboarding Documentation** - `docs/TEAM_ONBOARDING.md`
+  - Standardized setup steps for new team members
+  - Development environment checklist
+- ✅ **Frontend React Structure Scaffolded** (Kendall)
+  - `frontend/src/components/` - component directories ready
+  - `frontend/src/pages/` - page directories ready
+  - `frontend/src/services/` - API service layer directories ready
+  - `frontend/src/assets/` - static assets directory ready
+- ✅ **Expanded Test Dataset** (LeMikkos)
+  - Added 100 clean test files to `backend/test_data/Clean 1-100/`
+  - Added malicious test files to `backend/test_data/Malicious 1-100/`
+  - Dataset reorganized for consistency
+
+**Code Metrics:**
+- Total lines: 2,800+
+- New documentation: 400+ lines across 4 new docs
+- Test dataset: 200+ files (clean + malicious)
+- Frontend structure: scaffolded and ready for Week 5 implementation
+
+**Status:** Week 4 COMPLETE - 57% overall (28/49 days)
+
 ---
 
 ## 📁 Project Structure
@@ -593,10 +644,15 @@ See our comprehensive setup guide: [docs/SETUP.md](docs/SETUP.md) *(to be create
 
 ## 📚 Documentation
 
-- **[Setup Guide](docs/SETUP.md)** - Complete installation instructions *(Week 1)*
-- **[Architecture Overview](docs/ARCHITECTURE.md)** - System design & data flow *(Week 1)*
-- **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API reference *(Week 6)*
-- **[AWS Configuration](docs/AWS_CONFIGURATION.md)** - Cloud infrastructure setup *(Week 1)*
+- **[API Reference](docs/API_REFERENCE.md)** - ✅ REST API endpoint reference with examples *(Week 4)*
+- **[AWS Configuration](docs/AWS_CONFIGURATION.md)** - ✅ S3 client setup and integration guide *(Week 4)*
+- **[Email Architecture](docs/EMAIL_ARCHITECTURE.md)** - ✅ Email processing pipeline design *(Week 3)*
+- **[Backend Improvements](docs/BACKEND_IMPROVEMENTS.md)** - ✅ Code review and improvement notes *(Week 4)*
+- **[Snowflake Setup Guide](docs/SNOWFLAKE_SETUP_GUIDE.md)** - ✅ Database setup for team members *(Week 1)*
+- **[Team Onboarding](docs/TEAM_ONBOARDING.md)** - ✅ Dev environment setup for new team members *(Week 4)*
+- **[UI Design](docs/UI_DESIGN.md)** - ✅ Frontend wireframes and design specs *(Week 2)*
+- **[Week 4 Summary](docs/WEEK4_SUMMARY.md)** - ✅ Detailed Week 4 progress report *(Week 4)*
+- **[API Documentation](docs/API_DOCUMENTATION.md)** - Full API reference *(Week 6)*
 
 ---
 
@@ -661,22 +717,23 @@ This tool provides automated malware analysis for educational and research purpo
 - Start: March 2, 2026
 - End: April 17, 2026
 - Duration: 7 weeks (49 days)
-- Days Elapsed: 14
-- Days Remaining: 35
-- Progress: 29% complete
+- Days Elapsed: 28
+- Days Remaining: 21
+- Progress: 57% complete
 
-**Code Statistics:** *(Updated Week 2)*
-- Total Lines of Code: ~1,850
-- Python Files: 12
-- JavaScript Files: 0 (Week 4)
-- Test Files: 46 (24 malicious, 22 clean)
-- Total Commits: 25+
+**Code Statistics:** *(Updated Week 4)*
+- Total Lines of Code: ~2,800
+- Python Files: 14
+- JavaScript Files: 0 (Week 5 implementation)
+- Test Files: 200+ (clean + malicious datasets)
+- Documentation Files: 10
+- Total Commits: 50+
 - Contributors: 4 active
 
 **Latest Update:**
-- Date: March 15, 2026, 11:45 PM CST
+- Date: March 30, 2026, 12:00 AM CST
 - Updated by: Karrington Hall
-- Changes: Week 2 completed - REST API endpoints fully functional, test dataset integrated, AWS S3 client ready
+- Changes: Week 4 completed - API reference docs, Lambda deployment guide, backend improvements review, frontend structure scaffolded, expanded test dataset
 
 ---
 
@@ -686,7 +743,7 @@ This tool provides automated malware analysis for educational and research purpo
 
 *Protecting users from malware, one analysis at a time.*
 
-**Week 2 of 7 | Days 8-14 | March 9-15, 2026**
+**Week 4 of 7 | Days 22-28 | March 23-29, 2026**
 
 [View Issues](https://github.com/Karri53/malicious-file-analyzer/issues) • [Project Board](https://github.com/Karri53/malicious-file-analyzer/projects) • [Milestones](https://github.com/Karri53/malicious-file-analyzer/milestones)
 
