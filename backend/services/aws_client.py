@@ -118,12 +118,12 @@ def get_s3_client():
     Returns:
         S3Client: Mock or real S3 client instance
     """
-    # Check if AWS credentials are available
+    environment = os.environ.get('ENVIRONMENT', 'development')
     aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID')
 
-    if aws_access_key:
+    if environment == 'production' or aws_access_key:
         from .real_aws_client import RealS3Client
-        logger.info("AWS credentials detected - using RealS3Client")
+        logger.info("Using RealS3Client (production mode)")
         return RealS3Client()
     else:
         logger.info("No AWS credentials - using MockS3Client")

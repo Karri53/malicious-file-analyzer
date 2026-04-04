@@ -11,7 +11,9 @@
 **Response:**
 ```json
 {
-  "status": "healthy"
+  "status": "healthy",
+  "service": "Malicious File Analyzer API",
+  "version": "1.0.0"
 }
 ```
 
@@ -37,9 +39,9 @@ const response = await axios.post('/api/analyze/upload', formData);
 **Response:**
 ```json
 {
-  "scan_id": "20260323_abc123",
+  "success": true,
+  "scan_id": "550e8400-e29b-41d4-a716-446655440000",
   "filename": "document.pdf",
-  "file_size": 45632,
   "score": 0.45,
   "severity": "Moderate Risk",
   "indicators": {
@@ -51,13 +53,16 @@ const response = await axios.post('/api/analyze/upload', formData);
     "total_count": 3
   },
   "explanation": [
-    "Found 1 suspicious URL",
-    "Found 1 email address",
-    "Found 1 cryptocurrency address (Bitcoin)"
+    "1 URL(s) found",
+    "1 email address(es) found",
+    "1 cryptocurrency address(es) found"
   ],
-  "timestamp": "2026-03-23T14:30:00"
+  "analysis_time_seconds": 0.42
 }
 ```
+
+> Note: `scan_id` is a UUID (not a date-based string). `file_size` and `timestamp`
+> are stored in Snowflake but not returned in this response. Use `GET /api/results/<scan_id>` to retrieve full stored metadata.
 
 **Frontend use:** File upload page, results display
 
@@ -80,9 +85,73 @@ const response = await axios.post('/api/analyze/url', {
 });
 ```
 
-**Response:** Same as File Upload endpoint
+**Response:** Same shape as File Upload endpoint, plus a `url` field:
+```json
+{
+  "success": true,
+  "scan_id": "...",
+  "url": "http://example.com/file.pdf",
+  "filename": "file.pdf",
+  "score": 0.1,
+  "severity": "...",
+  "indicators": { ... },
+  "explanation": [ ... ],
+  "analysis_time_seconds": 1.23
+}
+```
 
 **Frontend use:** URL submission page
+
+---
+
+### 4. Get Scan by ID
+**GET** `/api/results/<scan_id>`
+
+**Response (found):**
+```json
+{
+  "success": true,
+  "scan": {
+    "scan_id": "550e8400-...",
+    "filename": "document.pdf",
+    "malicious_score": 0.45,
+    "severity": "Moderate Risk",
+    "upload_timestamp": "2026-04-04T16:09:00",
+    "file_type": ".pdf",
+    "file_size_bytes": 45632
+  },
+  "indicators": [
+    { "indicator_type": "urls", "indicator_value": "http://...", "confidence": 1.0 }
+  ]
+}
+```
+
+**Response (not found):** `404` with `{ "success": false, "error": "Scan not found: <id>" }`
+
+---
+
+### 5. Recent Scans
+**GET** `/api/results/recent?limit=10`
+
+**Query params:** `limit` (default 10, max 50)
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "scans": [ { ... }, { ... } ]
+}
+```
+
+**Frontend use:** Dashboard / history page
+
+---
+
+### 6. Email Analysis *(not yet implemented)*
+**POST** `/api/analyze/email`
+
+Returns `501 Not Implemented`. This endpoint is called by the AWS Lambda processor, not the frontend directly.
 
 ---
 
@@ -91,6 +160,7 @@ const response = await axios.post('/api/analyze/url', {
 All endpoints return errors in this format:
 ```json
 {
+  "success": false,
   "error": "Description of what went wrong"
 }
 ```
@@ -120,9 +190,14 @@ try {
 
 ## CORS Configuration
 
-Backend accepts requests from:
-- `http://localhost:5173` (Vite dev server)
-- `http://localhost:3000` (Create React App)
+`flask-cors` is configured with `CORS(app)` — **all origins are allowed** in
+development. Both of the following will work without changes:
+
+- `http://localhost:3000` (Create React App / `react-scripts start`)
+- `http://localhost:5173` (Vite)
+
+> For production, restrict origins by changing to:
+> `CORS(app, origins=["https://your-domain.com"])`
 
 ---
 

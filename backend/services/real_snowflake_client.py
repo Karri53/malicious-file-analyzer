@@ -27,9 +27,11 @@ class RealSnowflakeClient:
         self.database = os.getenv('SNOWFLAKE_DATABASE')
         self.schema = os.getenv('SNOWFLAKE_SCHEMA')
         self.role = os.getenv('SNOWFLAKE_ROLE')
-        
+        # Set to 'username_password_mfa' for MFA (Duo push) or leave unset for password-only
+        self.authenticator = os.getenv('SNOWFLAKE_AUTHENTICATOR')
+
         # Validate all required credentials are present
-        if not all([self.account, self.user, self.password, self.warehouse, 
+        if not all([self.account, self.user, self.password, self.warehouse,
                    self.database, self.schema]):
             raise ValueError(
                 "Missing required Snowflake credentials in environment variables. "
@@ -42,15 +44,21 @@ class RealSnowflakeClient:
     def _connect(self):
         """Establish connection to Snowflake."""
         try:
-            self.connection = snowflake.connector.connect(
+            connect_kwargs = dict(
                 account=self.account,
                 user=self.user,
                 password=self.password,
                 warehouse=self.warehouse,
                 database=self.database,
                 schema=self.schema,
-                role=self.role
+                role=self.role,
             )
+            if self.authenticator:
+                connect_kwargs['authenticator'] = self.authenticator
+                # Cache the MFA token so repeat connections don't re-prompt
+                connect_kwargs['client_store_temporary_credential'] = True
+                logger.info(f"Using authenticator: {self.authenticator}")
+            self.connection = snowflake.connector.connect(**connect_kwargs)
             logger.info(f"Connected to Snowflake: {self.database}.{self.schema}")
         except Exception as e:
             logger.error(f"Failed to connect to Snowflake: {str(e)}")
