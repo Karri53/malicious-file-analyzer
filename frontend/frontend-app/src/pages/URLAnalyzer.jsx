@@ -1,3 +1,4 @@
+import { scanURL } from '../services/api'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -20,14 +21,21 @@ export default function URLAnalyzer() {
   const [url, setUrl] = useState('')
   const navigate = useNavigate()
 
-  const handleScan = () => {
-    if (!url.trim()) return
-    if (!url.startsWith('http')) {
-      setPageState('error')
-      return
-    }
-    setPageState('processing')
+  const handleScan = async () => {
+  if (!url.trim()) return
+  if (!url.startsWith('http')) {
+    setPageState('error')
+    return
   }
+  setPageState('processing')
+
+  try {
+    const response = await scanURL(url)
+    navigate('/results', { state: response.data })
+  } catch (err) {
+    setPageState('error')
+  }
+}
 
   const stepColor = (state) => {
     if (state === 'done') return '#77997B'

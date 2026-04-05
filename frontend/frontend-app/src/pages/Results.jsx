@@ -113,7 +113,9 @@ export default function Results() {
             <div style={{ flex: 1, height: '1px', background: '#252015' }} />
           </div>
           <div style={{ background: '#111009', border: '1px solid #252015', borderRadius: '14px', padding: '26px' }}>
-            {(result.indicators || []).map((ind, i, arr) => (
+            {Object.entries(result.indicators || {}).filter(([key]) => key !== 'total_count').flatMap(([type, values]) => 
+              (values || []).map(value => ({ type, value }))
+            ).map((ind, i, arr) => (
               <div key={i} style={{ display: 'flex', gap: '12px', padding: '12px 0', borderBottom: i < arr.length - 1 ? '1px solid #252015' : 'none', alignItems: 'flex-start' }}>
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: sevBg(ind.sev || ind.severity), border: `1px solid ${sevColor(ind.sev || ind.severity)}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Space Mono', fontSize: '9px', fontWeight: '700', color: sevColor(ind.sev || ind.severity), flexShrink: 0, marginTop: '1px' }}>
                   {ind.sev || ind.severity || 'M'}
