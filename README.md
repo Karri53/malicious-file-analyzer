@@ -200,10 +200,10 @@ AWS CLI           - Cloud resource management
 
 ## 📊 Current Progress
 
-**Last Updated:** March 30, 2026, 12:00 AM CST  
-**Days Elapsed:** 28 / 49 (57%)  
-**Current Week:** Week 5 - Frontend Development & AWS Deployment  
-**Next Week:** Week 6 - Integration Testing & Polish  
+**Last Updated:** April 6, 2026, 9:00 AM CST
+**Days Elapsed:** 35 / 49 (71%)
+**Current Week:** Week 6 - Integration Testing & Final Polish
+**Next Week:** Week 7 - Deployment & Presentation  
 
 ### ✅ Week 1 COMPLETED (March 2-8)
 
@@ -376,11 +376,11 @@ AWS CLI           - Cloud resource management
 
 ---
 
-### ⏳ Week 5 IN PROGRESS (March 30 - April 5)
+### ✅ Week 5 COMPLETED (March 30 - April 5)
 
 **Focus:** Frontend Development, AWS Lambda Deployment & Integration
 
-**Planned Deliverables:**
+**Completed Deliverables:**
 - 🔄 **Lambda Email Processor Deployment** (Karrington)
   - Deploy to AWS Lambda with SES integration
   - Test email forwarding workflow
@@ -397,9 +397,51 @@ AWS CLI           - Cloud resource management
   - AWS deployment assistance
   - Backend performance optimization
   - Production environment setup
+---
 
-**Target Completion:** April 5, 2026
-**Expected Progress:** 71% (35/49 days)
+### ⏳ Week 6 IN PROGRESS (April 6-12)
+
+**Focus:** Integration Testing, Security Review & Final Polish
+
+**Planned Deliverables:**
+- 🔄 **End-to-End Integration Testing** (Karrington, Kendall, Brandon)
+  - Test complete user workflows across all submission methods
+  - Verify data persistence in Snowflake
+  - Confirm email forwarding works end-to-end
+  - Document integration test results
+- 🔄 **Complete API Documentation** (Karrington)
+  - Expand docs/API_REFERENCE.md with production details
+  - Document rate limiting and error codes
+  - Add authentication/security section
+  - Include deployment endpoints
+- 🔄 **Security Review & Hardening** (Brandon)
+  - Review all API endpoints for vulnerabilities
+  - Test input validation and sanitization
+  - Check for SQL injection, XSS, CSRF risks
+  - Create docs/SECURITY_REVIEW.md
+- 🔄 **User Testing Checklist** (LeMikkos)
+  - Define test scenarios for all features
+  - Document expected vs actual results
+  - Create user acceptance criteria
+  - Create docs/USER_TESTING_CHECKLIST.md
+- 🔄 **Frontend Bug Fixes & Polish** (Kendall)
+  - Address remaining UI/UX issues
+  - Implement accessibility features
+  - Optimize performance
+  - Final styling refinements
+- 🔄 **Backend Performance Testing** (Brandon)
+  - Load test API endpoints
+  - Monitor Lambda execution times
+  - Optimize database queries
+  - Document performance benchmarks
+- 🔄 **Deployment Documentation** (Brandon)
+  - Create docs/DEPLOYMENT_GUIDE.md
+  - Document AWS infrastructure setup
+  - List all environment variables
+  - Include rollback procedures
+
+**Target Completion:** April 12, 2026
+**Expected Progress:** 86% (42/49 days)
 
 ---
 
@@ -748,19 +790,19 @@ This tool provides automated malware analysis for educational and research purpo
 - Days Remaining: 21
 - Progress: 57% complete
 
-**Code Statistics:** *(Updated Week 5)*
-- Total Lines of Code: ~3,200+ (target)
+**Code Statistics:** *(Updated Week 6)*
+- Total Lines of Code: ~3,500+
 - Python Files: 14
-- JavaScript/React Files: 15+ (Week 5 implementation)
-- Test Files: 200+ (clean + malicious datasets)
-- Documentation Files: 11
-- Total Commits: 60+
+- JavaScript/React Files: 20+
+- Test Files: 500+ (clean + malicious datasets)
+- Documentation Files: 13
+- Total Commits: 75+
 - Contributors: 4 active
 
 **Latest Update:**
-- Date: March 30, 2026, 12:00 AM CST
+- Date: April 6, 2026, 9:00 AM CST
 - Updated by: Karrington Hall
-- Changes: Week 4 completed - API reference docs, Lambda deployment guide, backend improvements review, frontend structure scaffolded, expanded test dataset
+- Changes: Week 5 completed - Frontend fully implemented, Lambda deployed, production Snowflake configured, all submission methods working. Week 6 in progress - Integration testing and security review underway.
 
 ---
 
@@ -770,7 +812,7 @@ This tool provides automated malware analysis for educational and research purpo
 
 *Protecting users from malware, one analysis at a time.*
 
-**Week 4 of 7 | Days 22-28 | March 23-29, 2026**
+**Week 6 of 7 | Days 36-42 | April 6-12, 2026**
 
 [View Issues](https://github.com/Karri53/malicious-file-analyzer/issues) • [Project Board](https://github.com/Karri53/malicious-file-analyzer/projects) • [Milestones](https://github.com/Karri53/malicious-file-analyzer/milestones)
 
