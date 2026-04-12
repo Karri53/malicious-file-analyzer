@@ -3,6 +3,8 @@ Flask Backend API - Malicious File Analyzer
 Main application file with all API endpoints.
 """
 
+from platform import processor
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
@@ -236,13 +238,16 @@ def analyze_url():
         
         logger.info(f"Downloaded file from URL: {url} -> {filename}")
         
-        # Step 2: Process file to extract text
+       # Step 2: Process file to extract text
         processor = FileProcessor()
         file_data = processor.process_file(file_path)
-        
+
+        # If file type unsupported, use empty string for text
+        extracted_text = file_data.get('extracted_text', '')
+
         # Step 3: Extract malicious indicators from text
         extractor = IndicatorExtractor()
-        indicators = extractor.extract_all_indicators(file_data['extracted_text'])
+        indicators = extractor.extract_all_indicators(extracted_text)
 
         # Step 4: Calculate malicious score
         scorer = MaliciousScorer()
@@ -253,7 +258,7 @@ def analyze_url():
             # Prepare scan data
             scan_data = {
                 'filename': filename,
-                'file_type': file_data['file_type'],
+                'file_type': file_data.get('file_type', '.bin'),
                 'file_size_bytes': download_result['size'],
                 'malicious_score': score_result['score'],
                 'severity': score_result['severity'],
