@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useTheme } from '../utils/ThemeContext'
 
 const cards = [
   {
@@ -50,38 +51,57 @@ function getBadgeStyle(status) {
 
 export default function Home() {
   const navigate = useNavigate()
+  const { isDark } = useTheme()
+
+  const bg        = isDark ? '#0A0906'  : '#F5F0E8'
+  const surface   = isDark ? '#111009'  : '#FFFFFF'
+  const border    = isDark ? '#252015'  : '#E0D5C5'
+  const borderDim = isDark ? '#1C1C1C'  : '#EDE5D5'
+  const textPrimary = isDark ? '#EDEDCD' : '#1A1508'
+  const textMuted   = isDark ? '#B8AA8E' : '#5A4A2A'
+  const textDim     = isDark ? '#7A7260' : '#8B7355'
+  const textFaint   = isDark ? '#4A4535' : '#A89880'
+  const rowHover    = isDark ? '#181510' : '#F0E8D8'
 
   return (
-    <div style={{ padding: '72px 120px 80px', maxWidth: '1440px' }}>
+    <div style={{ padding: '40px 120px 80px', background: bg, minHeight: '100vh' }}>
 
       {/* Hero */}
-      <div style={{ marginBottom: '52px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#77997B' }} />
-          <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: '#77997B', letterSpacing: '0.12em' }}>
-            SYSTEM STATUS: OPERATIONAL
-          </span>
-        </div>
-        <h1 style={{ fontFamily: 'Space Mono', fontSize: '42px', fontWeight: '700', color: '#EDEDCD', lineHeight: '1.1', marginBottom: '16px' }}>
-          Analyze <span style={{ color: '#D0BC77' }}>suspicious</span><br />files. Safely.
-        </h1>
-        <p style={{ fontSize: '16px', color: '#7A7260', fontWeight: '300', maxWidth: '500px', lineHeight: '1.65', marginBottom: '28px' }}>
-          Submit URLs, forwarded emails, or files for deep malware analysis — without ever downloading them to your machine.
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-          {['Avg. scan time <8s', 'Multi-engine detection', 'Zero file retention'].map((item, i) => (
-            <span key={i} style={{ fontFamily: 'Space Mono', fontSize: '12px', color: '#7A7260' }}>
-              {i > 0 && <span style={{ marginRight: '20px', color: '#252015' }}>|</span>}
-              {item}
+      <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '40px' }}>
+
+        {/* Left: text content */}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#77997B' }} />
+            <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: '#77997B', letterSpacing: '0.12em' }}>
+              SYSTEM STATUS: OPERATIONAL
             </span>
-          ))}
+          </div>
+          <h1 style={{ fontFamily: 'Space Mono', fontSize: '42px', fontWeight: '700', color: textPrimary, lineHeight: '1.1', marginBottom: '16px' }}>
+            Analyze <span style={{ color: '#D0BC77' }}>suspicious</span><br />files. Safely.
+          </h1>
+          <p style={{ fontSize: '18px', color: textMuted, fontWeight: '400', maxWidth: '500px', lineHeight: '1.65', marginBottom: '28px' }}>
+            Submit URLs, forwarded emails, or files for deep malware analysis — without ever downloading them to your machine.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+            {['Avg. scan time <8s', 'Multi-engine detection', 'Zero file retention'].map((item, i) => (
+              <span key={i} style={{ fontFamily: 'Space Mono', fontSize: '13px', color: textDim }}>
+                {i > 0 && <span style={{ marginRight: '20px', color: border }}>|</span>}
+                {item}
+              </span>
+            ))}
+          </div>
         </div>
+
+        {/* Right: logo */}
+        <img src="/OpulenceLogo.png" alt="MFA Logo" style={{ width: '380px', opacity: isDark ? 0.85 : 1 }} />
+
       </div>
 
       {/* Section label */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-        <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: '#4A4535', letterSpacing: '0.14em' }}>CHOOSE AN ANALYSIS TYPE</span>
-        <div style={{ flex: 1, height: '1px', background: '#252015' }} />
+        <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textFaint, letterSpacing: '0.14em' }}>CHOOSE AN ANALYSIS TYPE</span>
+        <div style={{ flex: 1, height: '1px', background: border }} />
       </div>
 
       {/* Cards */}
@@ -91,8 +111,8 @@ export default function Home() {
             key={card.title}
             onClick={() => navigate(card.path)}
             style={{
-              background: '#111009',
-              border: `1px solid #252015`,
+              background: surface,
+              border: `1px solid ${border}`,
               borderRadius: '14px',
               padding: '26px',
               cursor: 'pointer',
@@ -105,17 +125,17 @@ export default function Home() {
               e.currentTarget.style.transform = 'translateY(-4px)'
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.borderColor = '#252015'
+              e.currentTarget.style.borderColor = border
               e.currentTarget.style.transform = 'translateY(0)'
             }}
           >
             <div style={{ width: '38px', height: '38px', borderRadius: '9px', background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', marginBottom: '16px' }}>
               {card.icon}
             </div>
-            <div style={{ fontFamily: 'Space Mono', fontSize: '14px', fontWeight: '700', color: '#EDEDCD', marginBottom: '8px' }}>
+            <div style={{ fontFamily: 'Space Mono', fontSize: '14px', fontWeight: '700', color: textPrimary, marginBottom: '8px' }}>
               {card.title}
             </div>
-            <p style={{ fontSize: '13px', color: '#7A7260', fontWeight: '300', lineHeight: '1.6', marginBottom: '20px', flex: 1 }}>
+            <p style={{ fontSize: '13px', color: textDim, fontWeight: '300', lineHeight: '1.6', marginBottom: '20px', flex: 1 }}>
               {card.desc}
             </p>
             <div style={{ fontFamily: 'Space Mono', fontSize: '11px', color: card.accent, letterSpacing: '0.06em' }}>
@@ -127,39 +147,39 @@ export default function Home() {
 
       {/* Recent Scans label */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-        <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: '#4A4535', letterSpacing: '0.14em' }}>RECENT SCANS</span>
-        <div style={{ flex: 1, height: '1px', background: '#252015' }} />
+        <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textFaint, letterSpacing: '0.14em' }}>RECENT SCANS</span>
+        <div style={{ flex: 1, height: '1px', background: border }} />
       </div>
 
       {/* Scans table */}
-      <div style={{ background: '#111009', border: '1px solid #252015', borderRadius: '14px', overflow: 'hidden' }}>
+      <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: '14px', overflow: 'hidden' }}>
         {/* Table header */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 80px 100px 100px 90px 90px', gap: '16px', padding: '10px 22px', borderBottom: '1px solid #1C1C1C' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 80px 100px 100px 90px 90px', gap: '16px', padding: '10px 22px', borderBottom: `1px solid ${borderDim}` }}>
           {['FILE NAME', 'TYPE', 'SCORE', 'ENGINE', 'STATUS', 'DATE'].map((h, i) => (
-            <span key={h} style={{ fontFamily: 'Space Mono', fontSize: '9px', color: '#4A4535', letterSpacing: '0.12em', textAlign: i >= 2 ? 'center' : 'left' }}>{h}</span>
+            <span key={h} style={{ fontFamily: 'Space Mono', fontSize: '9px', color: textFaint, letterSpacing: '0.12em', textAlign: i >= 2 ? 'center' : 'left' }}>{h}</span>
           ))}
         </div>
         {/* Rows */}
         {recentScans.map((row, i) => (
           <div
             key={i}
-            style={{ display: 'grid', gridTemplateColumns: '2fr 80px 100px 100px 90px 90px', gap: '16px', padding: '13px 22px', borderBottom: i < recentScans.length - 1 ? '1px solid #252015' : 'none', cursor: 'pointer', transition: 'background 0.18s' }}
-            onMouseEnter={e => e.currentTarget.style.background = '#181510'}
+            style={{ display: 'grid', gridTemplateColumns: '2fr 80px 100px 100px 90px 90px', gap: '16px', padding: '13px 22px', borderBottom: i < recentScans.length - 1 ? `1px solid ${border}` : 'none', cursor: 'pointer', transition: 'background 0.18s' }}
+            onMouseEnter={e => e.currentTarget.style.background = rowHover}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             <div>
-              <div style={{ fontFamily: 'Space Mono', fontSize: '11px', color: '#EDEDCD' }}>{row.name}</div>
-              <div style={{ fontFamily: 'Space Mono', fontSize: '10px', color: '#4A4535', marginTop: '2px' }}>{row.sub}</div>
+              <div style={{ fontFamily: 'Space Mono', fontSize: '11px', color: textPrimary }}>{row.name}</div>
+              <div style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textFaint, marginTop: '2px' }}>{row.sub}</div>
             </div>
-            <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: '#7A7260', alignSelf: 'center' }}>{row.type}</span>
+            <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: textDim, alignSelf: 'center' }}>{row.type}</span>
             <span style={{ fontFamily: 'Space Mono', fontSize: '13px', fontWeight: '700', color: getScoreColor(row.score), textAlign: 'center', alignSelf: 'center' }}>{row.score}</span>
-            <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: '#7A7260', textAlign: 'center', alignSelf: 'center' }}>{row.engine}</span>
+            <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textDim, textAlign: 'center', alignSelf: 'center' }}>{row.engine}</span>
             <div style={{ textAlign: 'center', alignSelf: 'center' }}>
               <span style={{ fontFamily: 'Space Mono', fontSize: '9px', fontWeight: '700', padding: '3px 10px', borderRadius: '100px', letterSpacing: '0.07em', ...getBadgeStyle(row.status) }}>
                 {row.status}
               </span>
             </div>
-            <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: '#4A4535', textAlign: 'right', alignSelf: 'center' }}>{row.date}</span>
+            <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textFaint, textAlign: 'right', alignSelf: 'center' }}>{row.date}</span>
           </div>
         ))}
       </div>
