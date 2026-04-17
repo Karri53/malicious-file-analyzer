@@ -18,8 +18,7 @@ load_dotenv()
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -39,30 +38,37 @@ from services.aws_client import get_s3_client
 # HEALTH CHECK ENDPOINT
 # ============================================================================
 
-@app.route('/api/health', methods=['GET'])
+
+@app.route("/api/health", methods=["GET"])
 def health_check():
     """
     Health check endpoint to verify API is running.
-    
+
     Returns:
         JSON response with status
     """
-    return jsonify({
-        'status': 'healthy',
-        'service': 'Malicious File Analyzer API',
-        'version': '1.0.0'
-    }), 200
+    return (
+        jsonify(
+            {
+                "status": "healthy",
+                "service": "Malicious File Analyzer API",
+                "version": "1.0.0",
+            }
+        ),
+        200,
+    )
 
 
 # ============================================================================
 # FILE UPLOAD ANALYSIS ENDPOINT
 # ============================================================================
 
-@app.route('/api/analyze/upload', methods=['POST'])
+
+@app.route("/api/analyze/upload", methods=["POST"])
 def analyze_upload():
     """
     Analyze a file uploaded directly by user.
-    
+
     Process:
     1. Receive file from user
     2. Process file (extract text)
@@ -70,125 +76,129 @@ def analyze_upload():
     4. Calculate malicious score
     5. Store results in Snowflake
     6. Return analysis results
-    
+
     Returns:
         JSON response with analysis results
     """
     start_time = time.time()
-    
+
     # Validate request has file
-    if 'file' not in request.files:
-        return jsonify({
-            'success': False,
-            'error': 'No file provided. Please upload a file.'
-        }), 400
-    
-    file = request.files['file']
-    
+    if "file" not in request.files:
+        return (
+            jsonify(
+                {"success": False, "error": "No file provided. Please upload a file."}
+            ),
+            400,
+        )
+
+    file = request.files["file"]
+
     # Validate filename exists
-    if file.filename == '':
-        return jsonify({
-            'success': False,
-            'error': 'No file selected'
-        }), 400
-    
+    if file.filename == "":
+        return jsonify({"success": False, "error": "No file selected"}), 400
+
     try:
         # Create temp directory for uploaded files
-        temp_dir = '/tmp/malware-uploads'
+        temp_dir = "/tmp/malware-uploads"
         os.makedirs(temp_dir, exist_ok=True)
-        
+
         # Save uploaded file temporarily with unique ID
         temp_filename = f"{uuid.uuid4()}_{file.filename}"
         temp_path = os.path.join(temp_dir, temp_filename)
         file.save(temp_path)
-        
+
         logger.info(f"Processing uploaded file: {file.filename}")
-        
+
         # Step 1: Process file to extract text
         processor = FileProcessor()
         file_data = processor.process_file(temp_path)
-        
+
         # Step 2: Extract malicious indicators from text
         extractor = IndicatorExtractor()
-        indicators = extractor.extract_all_indicators(file_data['extracted_text'])
+        indicators = extractor.extract_all_indicators(file_data["extracted_text"])
 
         # Step 3: Calculate malicious score
         scorer = MaliciousScorer()
         score_result = scorer.calculate_score(indicators)
-        
+
         # Step 4: Store results in Snowflake
         with get_snowflake_client() as sf:
             # Prepare scan data
             scan_data = {
-                'filename': file.filename,
-                'file_type': file_data['file_type'],
-                'file_size_bytes': file_data['file_size'],
-                'malicious_score': score_result['score'],
-                'severity': score_result['severity'],
-                'analysis_duration_seconds': time.time() - start_time,
-                'source_method': 'upload',
-                'user_ip': request.remote_addr,
-                'processing_status': 'completed'
+                "filename": file.filename,
+                "file_type": file_data["file_type"],
+                "file_size_bytes": file_data["file_size"],
+                "malicious_score": score_result["score"],
+                "severity": score_result["severity"],
+                "analysis_duration_seconds": time.time() - start_time,
+                "source_method": "upload",
+                "user_ip": request.remote_addr,
+                "processing_status": "completed",
             }
-            
+
             # Insert scan result and get scan ID
             scan_id = sf.insert_scan_result(scan_data)
             logger.info(f"Stored scan result with ID: {scan_id}")
-            
+
             # Store individual indicators
             indicator_list = []
             for ind_type, values in indicators.items():
                 # Skip total_count - it's an int, not a list
-                if ind_type == 'total_count':
+                if ind_type == "total_count":
                     continue
                 for value in values:
-                    indicator_list.append({
-                        'indicator_type': ind_type,
-                        'indicator_value': value,
-                        'confidence': 1.0
-                    })
-            
+                    indicator_list.append(
+                        {
+                            "indicator_type": ind_type,
+                            "indicator_value": value,
+                            "confidence": 1.0,
+                        }
+                    )
+
             if indicator_list:
                 sf.insert_indicators(scan_id, indicator_list)
                 logger.info(f"Stored {len(indicator_list)} indicators")
-        
+
         # Step 5: Clean up temp file
         os.remove(temp_path)
-        
+
         # Step 6: Return results to user
-        return jsonify({
-            'success': True,
-            'scan_id': scan_id,
-            'filename': file.filename,
-            'score': score_result['score'],
-            'severity': score_result['severity'],
-            'indicators': indicators,
-            'explanation': score_result['reasons'],  
-            'analysis_time_seconds': round(time.time() - start_time, 2)
-        }), 200
-        
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "scan_id": scan_id,
+                    "filename": file.filename,
+                    "score": score_result["score"],
+                    "severity": score_result["severity"],
+                    "indicators": indicators,
+                    "explanation": score_result["reasons"],
+                    "analysis_time_seconds": round(time.time() - start_time, 2),
+                }
+            ),
+            200,
+        )
+
     except Exception as e:
         logger.error(f"Upload analysis failed: {str(e)}")
-        
+
         # Clean up temp file if it exists
-        if 'temp_path' in locals() and os.path.exists(temp_path):
+        if "temp_path" in locals() and os.path.exists(temp_path):
             os.remove(temp_path)
-        
-        return jsonify({
-            'success': False,
-            'error': f'Analysis failed: {str(e)}'
-        }), 500
+
+        return jsonify({"success": False, "error": f"Analysis failed: {str(e)}"}), 500
 
 
 # ============================================================================
 # URL ANALYSIS ENDPOINT
 # ============================================================================
 
-@app.route('/api/analyze/url', methods=['POST'])
+
+@app.route("/api/analyze/url", methods=["POST"])
 def analyze_url():
     """
     Download and analyze a file from a URL.
-    
+
     Process:
     1. Receive URL from user
     2. Validate URL format
@@ -197,53 +207,52 @@ def analyze_url():
     5. Store results in Snowflake
     6. Clean up downloaded file
     7. Return analysis results
-    
+
     Returns:
         JSON response with analysis results
     """
     start_time = time.time()
-    
+
     # Get URL from request
     data = request.get_json()
-    
-    if not data or 'url' not in data:
-        return jsonify({
-            'success': False,
-            'error': 'No URL provided. Include "url" in request body.'
-        }), 400
-    
-    url = data['url'].strip()
-    
+
+    if not data or "url" not in data:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": 'No URL provided. Include "url" in request body.',
+                }
+            ),
+            400,
+        )
+
+    url = data["url"].strip()
+
     if not url:
-        return jsonify({
-            'success': False,
-            'error': 'URL cannot be empty'
-        }), 400
-    
+        return jsonify({"success": False, "error": "URL cannot be empty"}), 400
+
     try:
         # Step 1: Download file from URL
         from services.url_downloader import URLDownloader
-        
+
         downloader = URLDownloader(max_size_mb=10, timeout_seconds=30)
         download_result = downloader.download_file(url)
-        
-        if not download_result['success']:
-            return jsonify({
-                'success': False,
-                'error': download_result['error']
-            }), 400
-        
-        file_path = download_result['file_path']
-        filename = download_result['filename']
-        
+
+        if not download_result["success"]:
+            return jsonify({"success": False, "error": download_result["error"]}), 400
+
+        file_path = download_result["file_path"]
+        filename = download_result["filename"]
+
         logger.info(f"Downloaded file from URL: {url} -> {filename}")
-        
-       # Step 2: Process file to extract text
+
+        # Step 2: Process file to extract text
         processor = FileProcessor()
         file_data = processor.process_file(file_path)
 
         # If file type unsupported, use empty string for text
-        extracted_text = file_data.get('extracted_text', '')
+        extracted_text = file_data.get("extracted_text", "")
 
         # Step 3: Extract malicious indicators from text
         extractor = IndicatorExtractor()
@@ -252,125 +261,287 @@ def analyze_url():
         # Step 4: Calculate malicious score
         scorer = MaliciousScorer()
         score_result = scorer.calculate_score(indicators)
-        
+
         # Step 5: Store results in Snowflake
         with get_snowflake_client() as sf:
             # Prepare scan data
             scan_data = {
-                'filename': filename,
-                'file_type': file_data.get('file_type', '.bin'),
-                'file_size_bytes': download_result['size'],
-                'malicious_score': score_result['score'],
-                'severity': score_result['severity'],
-                'analysis_duration_seconds': time.time() - start_time,
-                'source_method': 'url',
-                'user_ip': request.remote_addr,
-                'processing_status': 'completed'
+                "filename": filename,
+                "file_type": file_data.get("file_type", ".bin"),
+                "file_size_bytes": download_result["size"],
+                "malicious_score": score_result["score"],
+                "severity": score_result["severity"],
+                "analysis_duration_seconds": time.time() - start_time,
+                "source_method": "url",
+                "user_ip": request.remote_addr,
+                "processing_status": "completed",
             }
-            
+
             # Insert scan result and get scan ID
             scan_id = sf.insert_scan_result(scan_data)
             logger.info(f"Stored URL scan result with ID: {scan_id}")
-            
+
             # Store URL source metadata
             url_metadata = {
-                'original_url': url,
-                'content_type': download_result['content_type'],
-                'download_timestamp': time.time()
+                "original_url": url,
+                "content_type": download_result["content_type"],
+                "download_timestamp": time.time(),
             }
             sf.insert_url_source(scan_id, url_metadata)
-            
+
             # Store individual indicators
             indicator_list = []
             for ind_type, values in indicators.items():
                 # Skip total_count - it's an int, not a list
-                if ind_type == 'total_count':
+                if ind_type == "total_count":
                     continue
                 for value in values:
-                    indicator_list.append({
-                        'indicator_type': ind_type,
-                        'indicator_value': value,
-                        'confidence': 1.0
-                    })
-            
+                    indicator_list.append(
+                        {
+                            "indicator_type": ind_type,
+                            "indicator_value": value,
+                            "confidence": 1.0,
+                        }
+                    )
+
             if indicator_list:
                 sf.insert_indicators(scan_id, indicator_list)
                 logger.info(f"Stored {len(indicator_list)} indicators")
-        
+
         # Step 6: Clean up downloaded file  ← Next section should be this!
         downloader.cleanup_file(file_path)
-        
+
         # Step 7: Return results to user
-        return jsonify({
-            'success': True,
-            'scan_id': scan_id,
-            'filename': filename,
-            'url': url,
-            'score': score_result['score'],
-            'severity': score_result['severity'],
-            'indicators': indicators,
-            'explanation': score_result['reasons'],  
-            'analysis_time_seconds': round(time.time() - start_time, 2)
-        }), 200
-        
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "scan_id": scan_id,
+                    "filename": filename,
+                    "url": url,
+                    "score": score_result["score"],
+                    "severity": score_result["severity"],
+                    "indicators": indicators,
+                    "explanation": score_result["reasons"],
+                    "analysis_time_seconds": round(time.time() - start_time, 2),
+                }
+            ),
+            200,
+        )
+
     except Exception as e:
         logger.error(f"URL analysis failed: {str(e)}")
-        
+
         # Clean up downloaded file if it exists
-        if 'file_path' in locals() and os.path.exists(file_path):
+        if "file_path" in locals() and os.path.exists(file_path):
             try:
                 downloader.cleanup_file(file_path)
             except:
                 pass
-        
-        return jsonify({
-            'success': False,
-            'error': f'Analysis failed: {str(e)}'
-        }), 500
+
+        return jsonify({"success": False, "error": f"Analysis failed: {str(e)}"}), 500
 
 
 # ============================================================================
 # EMAIL ANALYSIS ENDPOINT
 # ============================================================================
 
-@app.route('/api/analyze/email', methods=['POST'])
+
+@app.route("/api/analyze/email", methods=["POST"])
 def analyze_email():
     """
-    Process an email forwarded for analysis.
-    
-    Process:
-    1. Receive email data
-    2. Extract attachments
-    3. Process and analyze attachments
-    4. Store results in Snowflake
-    5. Return or email results
-    
-    Returns:
-        JSON response with analysis results
-    
-    Note: This endpoint will be called by AWS Lambda/SES
+    Analyze email content and attachments locally.
+
+    Current version:
+    - Accepts JSON payload
+    - Scans body text
+    - Scans attachments
+    - Stores results in Snowflake
+
+    Future version:
+    - AWS SES / Lambda automatic intake
     """
-    # TODO: Implement email processing
-    # TODO: This requires AWS SES setup - Week 3
-    
-    return jsonify({
-        'success': False,
-        'error': 'Email analysis not yet implemented. Coming in Week 3!'
-    }), 501  # 501 = Not Implemented
+    import base64
+
+    start_time = time.time()
+    temp_files = []
+
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"success": False, "error": "No JSON body provided"}), 400
+
+        sender = data.get("sender", "").strip()
+        subject = data.get("subject", "").strip()
+        body = data.get("body", "").strip()
+        attachments = data.get("attachments", [])
+
+        if not sender and not subject and not body and not attachments:
+            return jsonify({"success": False, "error": "Email payload is empty"}), 400
+
+        extractor = IndicatorExtractor()
+        scorer = MaliciousScorer()
+        processor = FileProcessor()
+
+        # Analyze email text
+        email_text = f"{subject}\n{body}"
+        email_indicators = extractor.extract_all_indicators(email_text)
+
+        combined_indicators = {
+            "urls": list(email_indicators.get("urls", [])),
+            "ip_addresses": list(email_indicators.get("ip_addresses", [])),
+            "emails": list(email_indicators.get("emails", [])),
+            "crypto_addresses": list(email_indicators.get("crypto_addresses", [])),
+            "file_hashes": list(email_indicators.get("file_hashes", [])),
+        }
+
+        attachment_results = []
+
+        temp_dir = "/tmp/malware-email-attachments"
+        os.makedirs(temp_dir, exist_ok=True)
+
+        for attachment in attachments:
+            filename = attachment.get("filename", "").strip()
+            content_base64 = attachment.get("content_base64", "").strip()
+
+            if not filename or not content_base64:
+                continue
+
+            temp_filename = f"{uuid.uuid4()}_{filename}"
+            temp_path = os.path.join(temp_dir, temp_filename)
+
+            try:
+                file_bytes = base64.b64decode(content_base64)
+            except Exception:
+                continue
+
+            with open(temp_path, "wb") as f:
+                f.write(file_bytes)
+
+            temp_files.append(temp_path)
+
+            file_data = processor.process_file(temp_path)
+            extracted_text = file_data.get("extracted_text", "")
+
+            file_indicators = extractor.extract_all_indicators(extracted_text)
+
+            for key in combined_indicators:
+                combined_indicators[key].extend(file_indicators.get(key, []))
+
+            attachment_results.append(
+                {
+                    "filename": filename,
+                    "file_type": file_data.get("file_type", "unknown"),
+                    "file_size": file_data.get("file_size", len(file_bytes)),
+                    "indicators": file_indicators,
+                }
+            )
+
+        # Remove duplicates
+        for key in combined_indicators:
+            combined_indicators[key] = list(set(combined_indicators[key]))
+
+        combined_indicators["total_count"] = sum(
+            len(v) for v in combined_indicators.values() if isinstance(v, list)
+        )
+
+        score_result = scorer.calculate_score(
+            combined_indicators, email_text=email_text
+        )
+
+        scan_id = None
+        snowflake_status = "skipped"
+
+        try:
+            with get_snowflake_client() as sf:
+                scan_data = {
+                    "filename": subject if subject else "email_analysis",
+                    "file_type": "email",
+                    "file_size_bytes": 0,
+                    "malicious_score": score_result["score"],
+                    "severity": score_result["severity"],
+                    "analysis_duration_seconds": time.time() - start_time,
+                    "source_method": "email",
+                    "user_ip": request.remote_addr,
+                    "processing_status": "completed",
+                }
+
+                scan_id = sf.insert_scan_result(scan_data)
+
+                indicator_list = []
+                for ind_type, values in combined_indicators.items():
+                    if ind_type == "total_count":
+                        continue
+                    for value in values:
+                        indicator_list.append(
+                            {
+                                "indicator_type": ind_type,
+                                "indicator_value": value,
+                                "confidence": 1.0,
+                            }
+                        )
+
+                if indicator_list:
+                    sf.insert_indicators(scan_id, indicator_list)
+
+                snowflake_status = "stored"
+
+        except Exception as db_error:
+            logger.warning(
+                f"Snowflake storage skipped/failed during email analysis: {str(db_error)}"
+            )
+            snowflake_status = f"failed_or_skipped: {str(db_error)}"
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "scan_id": scan_id,
+                    "sender": sender,
+                    "subject": subject,
+                    "score": score_result["score"],
+                    "severity": score_result["severity"],
+                    "indicators": combined_indicators,
+                    "attachment_results": attachment_results,
+                    "snowflake_status": snowflake_status,
+                    "explanation": score_result["reasons"],
+                    "analysis_time_seconds": round(time.time() - start_time, 2),
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Email analysis failed: {str(e)}")
+
+        return (
+            jsonify({"success": False, "error": f"Email analysis failed: {str(e)}"}),
+            500,
+        )
+
+    finally:
+        for temp_path in temp_files:
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
 
 
 # ============================================================================
 # RESULTS RETRIEVAL ENDPOINTS
 # ============================================================================
 
-@app.route('/api/results/<scan_id>', methods=['GET'])
+
+@app.route("/api/results/<scan_id>", methods=["GET"])
 def get_scan_result(scan_id):
     """
     Retrieve analysis results for a specific scan.
-    
+
     Args:
         scan_id: Unique scan identifier
-    
+
     Returns:
         JSON response with scan results and indicators
     """
@@ -378,101 +549,81 @@ def get_scan_result(scan_id):
         with get_snowflake_client() as sf:
             # Get scan result
             scan = sf.get_scan_by_id(scan_id)
-            
+
             if not scan:
-                return jsonify({
-                    'success': False,
-                    'error': f'Scan not found: {scan_id}'
-                }), 404
-            
+                return (
+                    jsonify({"success": False, "error": f"Scan not found: {scan_id}"}),
+                    404,
+                )
+
             # Get associated indicators
             indicators = sf.get_indicators_for_scan(scan_id)
-            
-            return jsonify({
-                'success': True,
-                'scan': scan,
-                'indicators': indicators
-            }), 200
-            
+
+            return (
+                jsonify({"success": True, "scan": scan, "indicators": indicators}),
+                200,
+            )
+
     except Exception as e:
         logger.error(f"Failed to retrieve scan {scan_id}: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@app.route('/api/results/recent', methods=['GET'])
+@app.route("/api/results/recent", methods=["GET"])
 def get_recent_scans():
     """
     Retrieve the most recent scans.
-    
+
     Query Parameters:
         limit (int): Number of scans to return (default: 10, max: 50)
-    
+
     Returns:
         JSON response with list of recent scans
     """
     # Get limit from query parameters
-    limit = request.args.get('limit', 10, type=int)
-    
+    limit = request.args.get("limit", 10, type=int)
+
     # Cap limit at 50 to prevent excessive data transfer
     limit = min(limit, 50)
-    
+
     try:
         with get_snowflake_client() as sf:
             scans = sf.get_recent_scans(limit=limit)
-            
-            return jsonify({
-                'success': True,
-                'scans': scans,
-                'count': len(scans)
-            }), 200
-            
+
+            return jsonify({"success": True, "scans": scans, "count": len(scans)}), 200
+
     except Exception as e:
         logger.error(f"Failed to retrieve recent scans: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ============================================================================
 # ERROR HANDLERS
 # ============================================================================
 
+
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
-    return jsonify({
-        'success': False,
-        'error': 'Endpoint not found'
-    }), 404
+    return jsonify({"success": False, "error": "Endpoint not found"}), 404
 
 
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors."""
-    return jsonify({
-        'success': False,
-        'error': 'Internal server error'
-    }), 500
+    return jsonify({"success": False, "error": "Internal server error"}), 500
 
 
 # ============================================================================
 # MAIN
 # ============================================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Run Flask development server
-    port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('FLASK_DEBUG', 'True') == 'True'
-    
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG", "True") == "True"
+
     logger.info(f"Starting Flask server on port {port}")
     logger.info(f"Debug mode: {debug}")
-    
-    app.run(
-        host='0.0.0.0',
-        port=port,
-        debug=debug
-    )
+
+    app.run(host="0.0.0.0", port=port, debug=debug)

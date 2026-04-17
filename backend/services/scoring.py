@@ -14,114 +14,146 @@ class MaliciousScorer:
     """
     Calculates maliciousness score based on indicators found in file.
     """
-    
+
     # Scoring weights (how much each indicator contributes)
     WEIGHTS = {
-        'url': 0.15,              # URLs present
-        'suspicious_tld': 0.15,   # Suspicious domains (.tk, .ml, .ga, .zip)
-        'ip_address': 0.10,       # IP addresses (C2 servers)
-        'email': 0.05,            # Email addresses
-        'crypto_address': 0.25,   # Cryptocurrency (ransomware!)
-        'file_hash': 0.10,        # File hashes (malware samples)
-        'multiple_indicators': 0.10,  # Many indicators (suspicious)
-        'port_in_url': 0.10       # URLs with ports (C2 communication)
+        "url": 0.15,
+        "suspicious_tld": 0.15,
+        "ip_address": 0.10,
+        "email": 0.05,
+        "crypto_address": 0.25,
+        "file_hash": 0.10,
+        "multiple_indicators": 0.10,
+        "port_in_url": 0.10,
+        "phishing_keyword": 0.20,
+        "multiple_urls": 0.10,
     }
-    
+
     # Suspicious top-level domains often used by attackers
-    SUSPICIOUS_TLDS = ['.tk', '.ml', '.ga', '.cf', '.gq', '.zip', '.top', '.work']
-    
+    SUSPICIOUS_TLDS = [".tk", ".ml", ".ga", ".cf", ".gq", ".zip", ".top", ".work"]
+
+    # Phishing Keywords Often Used
+    PHISHING_KEYWORDS = [
+        "urgent",
+        "immediately",
+        "click",
+        "reset password",
+        "verify account",
+        "verify your account",
+        "login",
+        "sign in",
+        "action required",
+        "confirm account",
+        "update account",
+    ]
+
     def __init__(self):
         """Initialize scorer"""
         logger.info("MaliciousScorer initialized")
-    
-    def calculate_score(self, indicators: Dict) -> Dict:
+
+    def calculate_score(self, indicators: Dict, email_text: str = "") -> Dict:
         """
         Calculate maliciousness score based on indicators
-        
+
         WHY: Converts technical findings into risk assessment
-        
+
         Args:
             indicators (dict): Extracted indicators from file
-            
+
         Returns:
             dict: Score, severity, and explanation
         """
         score = 0.0
         reasons = []
-        
+
         # Check for URLs
-        url_count = len(indicators.get('urls', []))
+        url_count = len(indicators.get("urls", []))
         if url_count > 0:
-            score += self.WEIGHTS['url']
+            score += self.WEIGHTS["url"]
             reasons.append(f"{url_count} URL(s) found")
-            
+
             # Check for suspicious TLDs
-            suspicious_urls = self._check_suspicious_tlds(indicators.get('urls', []))
+            suspicious_urls = self._check_suspicious_tlds(indicators.get("urls", []))
             if suspicious_urls > 0:
-                score += self.WEIGHTS['suspicious_tld']
-                reasons.append(f"{suspicious_urls} suspicious domain(s) (.tk, .ml, etc.)")
-            
+                score += self.WEIGHTS["suspicious_tld"]
+                reasons.append(
+                    f"{suspicious_urls} suspicious domain(s) (.tk, .ml, etc.)"
+                )
+
             # Check for URLs with ports (often C2 servers)
-            port_urls = self._check_urls_with_ports(indicators.get('urls', []))
+            port_urls = self._check_urls_with_ports(indicators.get("urls", []))
             if port_urls > 0:
-                score += self.WEIGHTS['port_in_url']
+                score += self.WEIGHTS["port_in_url"]
                 reasons.append(f"{port_urls} URL(s) with non-standard ports")
-        
+
+            # Check for multiple URLs (common phishing tactic)
+            if url_count >= 2:
+                score += self.WEIGHTS["multiple_urls"]
+                reasons.append(f"Multiple URLs found ({url_count})")
+
+            # Check for phishing language in email text
+            phishing_hits = self._check_phishing_keywords(email_text)
+            if phishing_hits > 0:
+                score += self.WEIGHTS["phishing_keyword"]
+                reasons.append(f"{phishing_hits} phishing keyword(s) found")
+
         # Check for IP addresses
-        ip_count = len(indicators.get('ip_addresses', []))
+        ip_count = len(indicators.get("ip_addresses", []))
         if ip_count > 0:
-            score += self.WEIGHTS['ip_address']
+            score += self.WEIGHTS["ip_address"]
             reasons.append(f"{ip_count} IP address(es) found")
-        
+
         # Check for email addresses
-        email_count = len(indicators.get('emails', []))
+        email_count = len(indicators.get("emails", []))
         if email_count > 0:
-            score += self.WEIGHTS['email']
+            score += self.WEIGHTS["email"]
             reasons.append(f"{email_count} email address(es) found")
-        
+
         # Check for cryptocurrency addresses (MAJOR RED FLAG for ransomware)
-        crypto_count = len(indicators.get('crypto_addresses', []))
+        crypto_count = len(indicators.get("crypto_addresses", []))
         if crypto_count > 0:
-            score += self.WEIGHTS['crypto_address']
-            reasons.append(f"{crypto_count} cryptocurrency address(es) found (ransomware indicator!)")
-        
+            score += self.WEIGHTS["crypto_address"]
+            reasons.append(
+                f"{crypto_count} cryptocurrency address(es) found (ransomware indicator!)"
+            )
+
         # Check for file hashes
-        hash_count = len(indicators.get('file_hashes', []))
+        hash_count = len(indicators.get("file_hashes", []))
         if hash_count > 0:
-            score += self.WEIGHTS['file_hash']
+            score += self.WEIGHTS["file_hash"]
             reasons.append(f"{hash_count} file hash(es) found")
-        
+
         # Check for multiple indicators (highly suspicious)
-        total_indicators = indicators.get('total_count', 0)
+        total_indicators = indicators.get("total_count", 0)
         if total_indicators >= 5:
-            score += self.WEIGHTS['multiple_indicators']
+            score += self.WEIGHTS["multiple_indicators"]
             reasons.append(f"High indicator count ({total_indicators} total)")
-        
+
         # Cap score at 1.0
         score = min(score, 1.0)
-        
+
         # Determine severity level
         severity = self._calculate_severity(score)
-        
+
         result = {
-            'score': round(score, 2),
-            'severity': severity,
-            'reasons': reasons,
-            'total_indicators': total_indicators
+            "score": round(score, 2),
+            "severity": severity,
+            "reasons": reasons,
+            "total_indicators": total_indicators,
         }
-        
+
         logger.info(f"Calculated score: {score:.2f} ({severity})")
         return result
-    
+
     def _check_suspicious_tlds(self, urls: List[str]) -> int:
         """
         Check for suspicious top-level domains
-        
+
         WHY: Free domains like .tk are heavily used by attackers
-        
+
         Args:
             urls (list): List of URLs
-            
+
         Returns:
             int: Count of suspicious URLs
         """
@@ -131,42 +163,58 @@ class MaliciousScorer:
             if any(tld in url_lower for tld in self.SUSPICIOUS_TLDS):
                 count += 1
         return count
-    
+
     def _check_urls_with_ports(self, urls: List[str]) -> int:
         """
         Check for URLs with non-standard ports
-        
+
         WHY: C2 servers often use custom ports like :8080, :4444
-        
+
         Args:
             urls (list): List of URLs
-            
+
         Returns:
             int: Count of URLs with ports
         """
         count = 0
         for url in urls:
             # Look for :NNNN pattern (but not :80 or :443 which are standard)
-            if ':' in url.split('//')[1] if '//' in url else url:
+            if ":" in url.split("//")[1] if "//" in url else url:
                 # Extract port
                 try:
-                    port_part = url.split('//')[1].split(':')[1].split('/')[0]
+                    port_part = url.split("//")[1].split(":")[1].split("/")[0]
                     port = int(port_part)
                     if port not in [80, 443]:  # Non-standard ports
                         count += 1
                 except (IndexError, ValueError):
                     pass
         return count
-    
+
+    def _check_phishing_keywords(self, text: str) -> int:
+        """
+        Check email/body text for phishing-style language.
+        """
+        if not text:
+            return 0
+
+        text_lower = text.lower()
+        count = 0
+
+        for keyword in self.PHISHING_KEYWORDS:
+            if keyword in text_lower:
+                count += 1
+
+        return count
+
     def _calculate_severity(self, score: float) -> str:
         """
         Convert numeric score to severity level
-        
+
         WHY: Users understand "High Risk" better than "0.75"
-        
+
         Args:
             score (float): Maliciousness score (0.0-1.0)
-            
+
         Returns:
             str: Severity level
         """
@@ -178,34 +226,38 @@ class MaliciousScorer:
             return "Low Severity - Potentially Risky"
         else:
             return "Minimal Severity - Likely Safe"
-    
+
     def generate_explanation(self, score_result: Dict, indicators: Dict) -> str:
         """
         Generate human-readable explanation of score
-        
+
         WHY: Users need to understand WHY something is dangerous
-        
+
         Args:
             score_result (dict): Scoring result
             indicators (dict): Found indicators
-            
+
         Returns:
             str: Detailed explanation
         """
         explanation = f"Maliciousness Score: {score_result['score']}/1.0\n"
         explanation += f"Severity: {score_result['severity']}\n\n"
-        
+
         explanation += "Analysis:\n"
-        for reason in score_result['reasons']:
+        for reason in score_result["reasons"]:
             explanation += f"  • {reason}\n"
-        
-        if score_result['total_indicators'] == 0:
+
+        if score_result["total_indicators"] == 0:
             explanation += "\nNo suspicious indicators found. File appears safe."
-        elif score_result['score'] < 0.4:
+        elif score_result["score"] < 0.4:
             explanation += "\nSome indicators present but overall risk is low."
-        elif score_result['score'] < 0.7:
-            explanation += "\nMultiple suspicious indicators detected. Exercise caution."
+        elif score_result["score"] < 0.7:
+            explanation += (
+                "\nMultiple suspicious indicators detected. Exercise caution."
+            )
         else:
-            explanation += "\n⚠️  HIGH RISK: Strong indicators of malicious content. Do not open!"
-        
+            explanation += (
+                "\n⚠️  HIGH RISK: Strong indicators of malicious content. Do not open!"
+            )
+
         return explanation

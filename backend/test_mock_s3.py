@@ -42,17 +42,17 @@ def test_mock_s3():
     print(f"✓ Content verified - matches original")
     
     # Test delete
-     result = s3.delete_file(
+    result = s3.delete_file(
        bucket_name='malware-analyzer-uploads-temp',
        object_name='test-upload.txt'
      )
-     print(f"✓ Delete result: {result}")
+    print(f"✓ Delete result: {result}")
     
     # Cleanup
     os.remove(test_file.name)
     os.remove(download_path)
     
-    print("\n✅ All mock S3 tests passed!")
+    print(f"\n✅ {type(s3).__name__} tests passed!")
 
 if __name__ == '__main__':
     test_mock_s3()
