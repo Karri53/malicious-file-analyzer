@@ -123,7 +123,7 @@ export default function Results() {
           </div>
           <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: '14px', padding: '26px' }}>
             {Object.entries(result.indicators || {}).filter(([key]) => key !== 'total_count').flatMap(([type, values]) =>
-              (values || []).map(value => ({ type, value }))
+              (Array.isArray(values) ? values : []).map(value => ({ type, value }))
             ).map((ind, i, arr) => (
               <div key={i} style={{ display: 'flex', gap: '12px', padding: '12px 0', borderBottom: i < arr.length - 1 ? `1px solid ${border}` : 'none', alignItems: 'flex-start' }}>
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: sevBg(ind.sev || ind.severity), border: `1px solid ${sevColor(ind.sev || ind.severity)}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Space Mono', fontSize: '9px', fontWeight: '700', color: sevColor(ind.sev || ind.severity), flexShrink: 0, marginTop: '1px' }}>
