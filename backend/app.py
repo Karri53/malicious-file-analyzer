@@ -112,6 +112,7 @@ def analyze_upload():
         # Step 1: Process file to extract text
         processor = FileProcessor()
         file_data = processor.process_file(temp_path)
+        print(file_data)
 
         # Step 2: Extract malicious indicators from text
         extractor = IndicatorExtractor()
@@ -169,6 +170,12 @@ def analyze_upload():
                     "success": True,
                     "scan_id": scan_id,
                     "filename": file.filename,
+                    "file_type": file_data.get("file_type", "unknown")
+                    .replace(".", "")
+                    .upper(),
+                    "file_size": file_data.get("file_size", 0),
+                    "md5": file_data.get("md5", ""),
+                    "sha256": file_data.get("file_hash", ""),
                     "score": score_result["score"],
                     "severity": score_result["severity"],
                     "indicators": indicators,
