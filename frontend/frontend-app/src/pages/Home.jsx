@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../utils/ThemeContext'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 
 const cards = [
   {
@@ -31,16 +33,16 @@ const cards = [
   },
 ]
 
-const recentScans = [
-  { name: 'invoice_march.pdf', sub: '2.4 MB · Email attachment', type: 'File', score: 87, engine: 'VirusTotal', status: 'MALICIOUS', date: 'Mar 11' },
-  { name: 'phishing.eml',      sub: '14 KB · Email attachment',  type: 'Email', score: 64, engine: 'Sandbox',    status: 'WARNING',   date: 'Mar 10' },
-  { name: 'malware.exe',       sub: '890 KB · File upload',      type: 'File', score: 92, engine: 'Static',     status: 'MALICIOUS', date: 'Mar 9'  },
-]
-
 function getScoreColor(score) {
   if (score >= 70) return '#E05555'
   if (score >= 31) return '#D0BC77'
   return '#77997B'
+}
+
+function getStatus(score) {
+  if (score >= 70) return 'MALICIOUS'
+  if (score >= 31) return 'WARNING'
+  return 'CLEAN'
 }
 
 function getBadgeStyle(status) {
@@ -49,9 +51,33 @@ function getBadgeStyle(status) {
   return { color: '#77997B', background: 'rgba(119,153,123,0.12)', border: '1px solid rgba(119,153,123,0.3)' }
 }
 
+function formatBytes(bytes) {
+  if (!bytes) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export default function Home() {
   const navigate = useNavigate()
   const { isDark } = useTheme()
+  const [recentScans, setRecentScans] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchRecent = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/results/recent')
+        setRecentScans(res.data.scans || [])
+      } catch (err) {
+        console.error('Failed to fetch recent scans:', err)
+        setRecentScans([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchRecent()
+  }, [])
 
   const bg        = isDark ? '#0A0906'  : '#F5F0E8'
   const surface   = isDark ? '#111009'  : '#FFFFFF'
@@ -63,13 +89,29 @@ export default function Home() {
   const textFaint   = isDark ? '#4A4535' : '#A89880'
   const rowHover    = isDark ? '#181510' : '#F0E8D8'
 
+  const handleRowClick = (scan) => {
+    const score = Math.round((scan.malicious_score || 0) * 100)
+    navigate('/results', {
+      state: {
+        filename: scan.filename,
+        meta: `${formatBytes(scan.file_size_bytes)} · ${scan.file_type || 'Unknown'} · Submitted via ${scan.source_method || 'Upload'}`,
+        score,
+        file_type: scan.file_type,
+        file_size: formatBytes(scan.file_size_bytes),
+        scan_time: scan.analysis_duration_seconds ? `${scan.analysis_duration_seconds.toFixed(2)}s` : '—',
+        scanned: scan.upload_timestamp && scan.upload_timestamp !== 'mock_timestamp'
+          ? new Date(scan.upload_timestamp).toLocaleString()
+          : '—',
+        indicators: {},
+      }
+    })
+  }
+
   return (
     <div style={{ padding: '40px 120px 80px', background: bg, minHeight: '100vh' }}>
 
       {/* Hero */}
       <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '40px' }}>
-
-        {/* Left: text content */}
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#77997B' }} />
@@ -92,10 +134,7 @@ export default function Home() {
             ))}
           </div>
         </div>
-
-        {/* Right: logo */}
         <img src="/OpulenceLogo.png" alt="MFA Logo" style={{ width: '380px', opacity: isDark ? 0.85 : 1 }} />
-
       </div>
 
       {/* Section label */}
@@ -111,36 +150,19 @@ export default function Home() {
             key={card.title}
             onClick={() => navigate(card.path)}
             style={{
-              background: surface,
-              border: `1px solid ${border}`,
-              borderRadius: '14px',
-              padding: '26px',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
+              background: surface, border: `1px solid ${border}`, borderRadius: '14px',
+              padding: '26px', cursor: 'pointer', display: 'flex', flexDirection: 'column',
               transition: 'border-color 0.3s, transform 0.28s',
             }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = card.accent
-              e.currentTarget.style.transform = 'translateY(-4px)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = border
-              e.currentTarget.style.transform = 'translateY(0)'
-            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = card.accent; e.currentTarget.style.transform = 'translateY(-4px)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = border; e.currentTarget.style.transform = 'translateY(0)' }}
           >
             <div style={{ width: '38px', height: '38px', borderRadius: '9px', background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', marginBottom: '16px' }}>
               {card.icon}
             </div>
-            <div style={{ fontFamily: 'Space Mono', fontSize: '14px', fontWeight: '700', color: textPrimary, marginBottom: '8px' }}>
-              {card.title}
-            </div>
-            <p style={{ fontSize: '13px', color: textDim, fontWeight: '300', lineHeight: '1.6', marginBottom: '20px', flex: 1 }}>
-              {card.desc}
-            </p>
-            <div style={{ fontFamily: 'Space Mono', fontSize: '11px', color: card.accent, letterSpacing: '0.06em' }}>
-              {card.cta} →
-            </div>
+            <div style={{ fontFamily: 'Space Mono', fontSize: '14px', fontWeight: '700', color: textPrimary, marginBottom: '8px' }}>{card.title}</div>
+            <p style={{ fontSize: '13px', color: textDim, fontWeight: '300', lineHeight: '1.6', marginBottom: '20px', flex: 1 }}>{card.desc}</p>
+            <div style={{ fontFamily: 'Space Mono', fontSize: '11px', color: card.accent, letterSpacing: '0.06em' }}>{card.cta} →</div>
           </div>
         ))}
       </div>
@@ -154,34 +176,59 @@ export default function Home() {
       {/* Scans table */}
       <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: '14px', overflow: 'hidden' }}>
         {/* Table header */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 80px 100px 100px 90px 90px', gap: '16px', padding: '10px 22px', borderBottom: `1px solid ${borderDim}` }}>
-          {['FILE NAME', 'TYPE', 'SCORE', 'ENGINE', 'STATUS', 'DATE'].map((h, i) => (
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 80px 100px 120px 90px 90px', gap: '16px', padding: '10px 22px', borderBottom: `1px solid ${borderDim}` }}>
+          {['FILE NAME', 'TYPE', 'SCORE', 'SEVERITY', 'STATUS', 'SIZE'].map((h, i) => (
             <span key={h} style={{ fontFamily: 'Space Mono', fontSize: '9px', color: textFaint, letterSpacing: '0.12em', textAlign: i >= 2 ? 'center' : 'left' }}>{h}</span>
           ))}
         </div>
-        {/* Rows */}
-        {recentScans.map((row, i) => (
-          <div
-            key={i}
-            style={{ display: 'grid', gridTemplateColumns: '2fr 80px 100px 100px 90px 90px', gap: '16px', padding: '13px 22px', borderBottom: i < recentScans.length - 1 ? `1px solid ${border}` : 'none', cursor: 'pointer', transition: 'background 0.18s' }}
-            onMouseEnter={e => e.currentTarget.style.background = rowHover}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >
-            <div>
-              <div style={{ fontFamily: 'Space Mono', fontSize: '11px', color: textPrimary }}>{row.name}</div>
-              <div style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textFaint, marginTop: '2px' }}>{row.sub}</div>
-            </div>
-            <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: textDim, alignSelf: 'center' }}>{row.type}</span>
-            <span style={{ fontFamily: 'Space Mono', fontSize: '13px', fontWeight: '700', color: getScoreColor(row.score), textAlign: 'center', alignSelf: 'center' }}>{row.score}</span>
-            <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textDim, textAlign: 'center', alignSelf: 'center' }}>{row.engine}</span>
-            <div style={{ textAlign: 'center', alignSelf: 'center' }}>
-              <span style={{ fontFamily: 'Space Mono', fontSize: '9px', fontWeight: '700', padding: '3px 10px', borderRadius: '100px', letterSpacing: '0.07em', ...getBadgeStyle(row.status) }}>
-                {row.status}
-              </span>
-            </div>
-            <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textFaint, textAlign: 'right', alignSelf: 'center' }}>{row.date}</span>
+
+        {/* Loading state */}
+        {loading && (
+          <div style={{ padding: '32px', textAlign: 'center', fontFamily: 'Space Mono', fontSize: '11px', color: textFaint }}>
+            Loading recent scans...
           </div>
-        ))}
+        )}
+
+        {/* Empty state */}
+        {!loading && recentScans.length === 0 && (
+          <div style={{ padding: '32px', textAlign: 'center', fontFamily: 'Space Mono', fontSize: '11px', color: textFaint }}>
+            No recent scans found
+          </div>
+        )}
+
+        {/* Rows */}
+        {!loading && recentScans.map((scan, i) => {
+          const score = Math.round((scan.malicious_score || 0) * 100)
+          const status = getStatus(score)
+          return (
+            <div
+              key={scan.scan_id || i}
+              onClick={() => handleRowClick(scan)}
+              style={{
+                display: 'grid', gridTemplateColumns: '2fr 80px 100px 120px 90px 90px',
+                gap: '16px', padding: '13px 22px',
+                borderBottom: i < recentScans.length - 1 ? `1px solid ${border}` : 'none',
+                cursor: 'pointer', transition: 'background 0.18s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = rowHover}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <div>
+                <div style={{ fontFamily: 'Space Mono', fontSize: '11px', color: textPrimary }}>{scan.filename}</div>
+                <div style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textFaint, marginTop: '2px' }}>{scan.source_method || 'upload'}</div>
+              </div>
+              <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: textDim, alignSelf: 'center' }}>{scan.file_type || '—'}</span>
+              <span style={{ fontFamily: 'Space Mono', fontSize: '13px', fontWeight: '700', color: getScoreColor(score), textAlign: 'center', alignSelf: 'center' }}>{score}</span>
+              <span style={{ fontFamily: 'Space Mono', fontSize: '9px', color: textDim, textAlign: 'center', alignSelf: 'center', lineHeight: '1.4' }}>{scan.severity || '—'}</span>
+              <div style={{ textAlign: 'center', alignSelf: 'center' }}>
+                <span style={{ fontFamily: 'Space Mono', fontSize: '9px', fontWeight: '700', padding: '3px 10px', borderRadius: '100px', letterSpacing: '0.07em', ...getBadgeStyle(status) }}>
+                  {status}
+                </span>
+              </div>
+              <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textFaint, textAlign: 'right', alignSelf: 'center' }}>{formatBytes(scan.file_size_bytes)}</span>
+            </div>
+          )
+        })}
       </div>
 
     </div>
