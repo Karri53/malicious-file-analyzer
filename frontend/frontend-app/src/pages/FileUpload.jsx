@@ -38,14 +38,14 @@ export default function FileUpload() {
   const navigate = useNavigate()
   const { isDark } = useTheme()
 
-  const bg          = isDark ? '#0A0906'  : '#F5F0E8'
-  const surface     = isDark ? '#111009'  : '#FFFFFF'
-  const surface2    = isDark ? '#181510'  : '#F0E8D8'
-  const border      = isDark ? '#252015'  : '#E0D5C5'
-  const borderDim   = isDark ? '#1C1C1C'  : '#EDE5D5'
-  const textPrimary = isDark ? '#EDEDCD'  : '#1A1508'
-  const textMuted   = isDark ? '#7A7260'  : '#6B5D45'
-  const textFaint   = isDark ? '#4A4535'  : '#A89880'
+  const bg = isDark ? '#0A0906' : '#F5F0E8'
+  const surface = isDark ? '#111009' : '#FFFFFF'
+  const surface2 = isDark ? '#181510' : '#F0E8D8'
+  const border = isDark ? '#252015' : '#E0D5C5'
+  const borderDim = isDark ? '#1C1C1C' : '#EDE5D5'
+  const textPrimary = isDark ? '#EDEDCD' : '#1A1508'
+  const textMuted = isDark ? '#7A7260' : '#6B5D45'
+  const textFaint = isDark ? '#4A4535' : '#A89880'
 
   const handleFile = async (file) => {
     if (!file) return
@@ -57,14 +57,14 @@ export default function FileUpload() {
       navigate('/results', {
         state: {
           filename: data.filename,
-          meta: `${(data.indicators ? Object.values(data.indicators).flat().length : 0)} indicators · Submitted via File Upload`,
+          meta: `${data.indicators?.total_count || 0} indicator${(data.indicators?.total_count || 0) === 1 ? '' : 's'} · Submitted via File Upload`,
           score: normalizeScore(data.score),
-          fileType: 'Uploaded File',
-          fileSize: file.size > 1024*1024
-            ? `${(file.size/1024/1024).toFixed(1)} MB`
-            : `${(file.size/1024).toFixed(0)} KB`,
-          md5: data.scan_id || '—',
-          sha256: '—',
+          fileType: data.file_type || 'Unknown',
+          fileSize: data.file_size > 1024 * 1024
+            ? `${(data.file_size / 1024 / 1024).toFixed(1)} MB`
+            : `${Math.max(1, Math.round(data.file_size / 1024))} KB`,
+          md5: data.md5 || '—',
+          sha256: data.sha256 || '—',
           scanTime: `${data.analysis_time_seconds}s`,
           scanned: new Date().toLocaleString(),
           indicators: formatIndicators(data.indicators),
