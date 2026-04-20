@@ -32,6 +32,34 @@ from utils.regex_patterns import IndicatorExtractor
 from services.scoring import MaliciousScorer
 from services.snowflake_client import get_snowflake_client
 from services.aws_client import get_s3_client
+from services.real_snowflake_client import RealSnowflakeClient
+from services.mock_snowflake_client import MockSnowflakeClient
+import os
+
+# ============================================================================
+# DATABASE CLIENT INITIALIZATION
+# ============================================================================
+USE_PRODUCTION = os.getenv("USE_REAL_SNOWFLAKE", "false").lower() == "true"
+
+if USE_PRODUCTION:
+    try:
+        print("\n" + "=" * 60)
+        print("🔐 PRODUCTION SNOWFLAKE - MFA REQUIRED")
+        print("=" * 60)
+        print("\nOpen your authenticator app and get your 6-digit code")
+        passcode = input("Enter MFA code: ").strip()
+
+        db = RealSnowflakeClient(passcode=passcode)
+        print("✅ Connected to Production Snowflake")
+        print("=" * 60 + "\n")
+    except Exception as e:
+        print(f"\n⚠️  Production Snowflake failed: {e}")
+        print("⚠️  Falling back to MockSnowflakeClient")
+        db = MockSnowflakeClient()
+else:
+    print("\nℹ️  Using MockSnowflakeClient")
+    print("   (Set USE_REAL_SNOWFLAKE=true in .env for production)\n")
+    db = MockSnowflakeClient()
 
 
 # ============================================================================
@@ -112,7 +140,6 @@ def analyze_upload():
         # Step 1: Process file to extract text
         processor = FileProcessor()
         file_data = processor.process_file(temp_path)
-        print(file_data)
 
         # Step 2: Extract malicious indicators from text
         extractor = IndicatorExtractor()
@@ -123,42 +150,41 @@ def analyze_upload():
         score_result = scorer.calculate_score(indicators)
 
         # Step 4: Store results in Snowflake
-        with get_snowflake_client() as sf:
-            # Prepare scan data
-            scan_data = {
-                "filename": file.filename,
-                "file_type": file_data["file_type"],
-                "file_size_bytes": file_data["file_size"],
-                "malicious_score": score_result["score"],
-                "severity": score_result["severity"],
-                "analysis_duration_seconds": time.time() - start_time,
-                "source_method": "upload",
-                "user_ip": request.remote_addr,
-                "processing_status": "completed",
-            }
+        # Prepare scan data
+        scan_data = {
+            "filename": file.filename,
+            "file_type": file_data["file_type"],
+            "file_size_bytes": file_data["file_size"],
+            "malicious_score": score_result["score"],
+            "severity": score_result["severity"],
+            "analysis_duration_seconds": time.time() - start_time,
+            "source_method": "upload",
+            "user_ip": request.remote_addr,
+            "processing_status": "completed",
+        }
 
-            # Insert scan result and get scan ID
-            scan_id = sf.insert_scan_result(scan_data)
-            logger.info(f"Stored scan result with ID: {scan_id}")
+        # Insert scan result and get scan ID
+        scan_id = db.insert_scan_result(scan_data)
+        logger.info(f"Stored scan result with ID: {scan_id}")
 
-            # Store individual indicators
-            indicator_list = []
-            for ind_type, values in indicators.items():
-                # Skip total_count - it's an int, not a list
-                if ind_type == "total_count":
-                    continue
-                for value in values:
-                    indicator_list.append(
-                        {
-                            "indicator_type": ind_type,
-                            "indicator_value": value,
-                            "confidence": 1.0,
-                        }
-                    )
+        # Store individual indicators
+        indicator_list = []
+        for ind_type, values in indicators.items():
+            # Skip total_count - it's an int, not a list
+            if ind_type == "total_count":
+                continue
+            for value in values:
+                indicator_list.append(
+                    {
+                        "indicator_type": ind_type,
+                        "indicator_value": value,
+                        "confidence": 1.0,
+                    }
+                )
 
-            if indicator_list:
-                sf.insert_indicators(scan_id, indicator_list)
-                logger.info(f"Stored {len(indicator_list)} indicators")
+        if indicator_list:
+            db.insert_indicators(scan_id, indicator_list)
+            logger.info(f"Stored {len(indicator_list)} indicators")
 
         # Step 5: Clean up temp file
         os.remove(temp_path)
@@ -170,12 +196,6 @@ def analyze_upload():
                     "success": True,
                     "scan_id": scan_id,
                     "filename": file.filename,
-                    "file_type": file_data.get("file_type", "unknown")
-                    .replace(".", "")
-                    .upper(),
-                    "file_size": file_data.get("file_size", 0),
-                    "md5": file_data.get("md5", ""),
-                    "sha256": file_data.get("file_hash", ""),
                     "score": score_result["score"],
                     "severity": score_result["severity"],
                     "indicators": indicators,
@@ -270,50 +290,49 @@ def analyze_url():
         score_result = scorer.calculate_score(indicators)
 
         # Step 5: Store results in Snowflake
-        with get_snowflake_client() as sf:
-            # Prepare scan data
-            scan_data = {
-                "filename": filename,
-                "file_type": file_data.get("file_type", ".bin"),
-                "file_size_bytes": download_result["size"],
-                "malicious_score": score_result["score"],
-                "severity": score_result["severity"],
-                "analysis_duration_seconds": time.time() - start_time,
-                "source_method": "url",
-                "user_ip": request.remote_addr,
-                "processing_status": "completed",
-            }
+        # Prepare scan data
+        scan_data = {
+            "filename": filename,
+            "file_type": file_data.get("file_type", ".bin"),
+            "file_size_bytes": download_result["size"],
+            "malicious_score": score_result["score"],
+            "severity": score_result["severity"],
+            "analysis_duration_seconds": time.time() - start_time,
+            "source_method": "url",
+            "user_ip": request.remote_addr,
+            "processing_status": "completed",
+        }
 
-            # Insert scan result and get scan ID
-            scan_id = sf.insert_scan_result(scan_data)
-            logger.info(f"Stored URL scan result with ID: {scan_id}")
+        # Insert scan result and get scan ID
+        scan_id = db.insert_scan_result(scan_data)
+        logger.info(f"Stored URL scan result with ID: {scan_id}")
 
-            # Store URL source metadata
-            url_metadata = {
-                "original_url": url,
-                "content_type": download_result["content_type"],
-                "download_timestamp": time.time(),
-            }
-            sf.insert_url_source(scan_id, url_metadata)
+        # Store URL source metadata
+        url_metadata = {
+            "original_url": url,
+            "content_type": download_result["content_type"],
+            "download_timestamp": time.time(),
+        }
+        db.insert_url_source(scan_id, url_metadata)
 
-            # Store individual indicators
-            indicator_list = []
-            for ind_type, values in indicators.items():
-                # Skip total_count - it's an int, not a list
-                if ind_type == "total_count":
-                    continue
-                for value in values:
-                    indicator_list.append(
-                        {
-                            "indicator_type": ind_type,
-                            "indicator_value": value,
-                            "confidence": 1.0,
-                        }
-                    )
+        # Store individual indicators
+        indicator_list = []
+        for ind_type, values in indicators.items():
+            # Skip total_count - it's an int, not a list
+            if ind_type == "total_count":
+                continue
+            for value in values:
+                indicator_list.append(
+                    {
+                        "indicator_type": ind_type,
+                        "indicator_value": value,
+                        "confidence": 1.0,
+                    }
+                )
 
-            if indicator_list:
-                sf.insert_indicators(scan_id, indicator_list)
-                logger.info(f"Stored {len(indicator_list)} indicators")
+        if indicator_list:
+            db.insert_indicators(scan_id, indicator_list)
+            logger.info(f"Stored {len(indicator_list)} indicators")
 
         # Step 6: Clean up downloaded file  ← Next section should be this!
         downloader.cleanup_file(file_path)
@@ -357,16 +376,19 @@ def analyze_url():
 @app.route("/api/analyze/email", methods=["POST"])
 def analyze_email():
     """
-    Analyze email content and attachments locally.
+    Process an email forwarded for analysis.
 
-    Current version:
-    - Accepts JSON payload
-    - Scans body text
-    - Scans attachments
-    - Stores results in Snowflake
+    Process:
+    1. Receive email data
+    2. Extract attachments
+    3. Process and analyze attachments
+    4. Store results in Snowflake
+    5. Return or email results
 
-    Future version:
-    - AWS SES / Lambda automatic intake
+    Returns:
+        JSON response with analysis results
+
+    Note: This endpoint will be called by AWS Lambda/SES
     """
     import base64
 
@@ -572,23 +594,19 @@ def get_scan_result(scan_id):
         JSON response with scan results and indicators
     """
     try:
-        with get_snowflake_client() as sf:
-            # Get scan result
-            scan = sf.get_scan_by_id(scan_id)
+        # Get scan result
+        scan = db.get_scan_by_id(scan_id)
 
-            if not scan:
-                return (
-                    jsonify({"success": False, "error": f"Scan not found: {scan_id}"}),
-                    404,
-                )
-
-            # Get associated indicators
-            indicators = sf.get_indicators_for_scan(scan_id)
-
+        if not scan:
             return (
-                jsonify({"success": True, "scan": scan, "indicators": indicators}),
-                200,
+                jsonify({"success": False, "error": f"Scan not found: {scan_id}"}),
+                404,
             )
+
+        # Get associated indicators
+        indicators = db.get_indicators_for_scan(scan_id)
+
+        return jsonify({"success": True, "scan": scan, "indicators": indicators}), 200
 
     except Exception as e:
         logger.error(f"Failed to retrieve scan {scan_id}: {str(e)}")
@@ -613,10 +631,9 @@ def get_recent_scans():
     limit = min(limit, 50)
 
     try:
-        with get_snowflake_client() as sf:
-            scans = sf.get_recent_scans(limit=limit)
+        scans = db.get_recent_scans(limit=limit)
 
-            return jsonify({"success": True, "scans": scans, "count": len(scans)}), 200
+        return jsonify({"success": True, "scans": scans, "count": len(scans)}), 200
 
     except Exception as e:
         logger.error(f"Failed to retrieve recent scans: {str(e)}")

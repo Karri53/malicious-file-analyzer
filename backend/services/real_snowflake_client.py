@@ -1,119 +1,171 @@
 """
-Real Snowflake Client Implementation
-Connects to actual Snowflake database for malware analysis results storage
+Real Snowflake Database Client
+Connects to production Snowflake database with MFA support
 """
 
-import snowflake.connector
 import os
+import logging
+import snowflake.connector
+from dotenv import load_dotenv
 from datetime import datetime
 import uuid
-import logging
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-
 class RealSnowflakeClient:
     """
-    Production Snowflake client with connection pooling and error handling.
-    Stores malware analysis results in OPULENCE_DB.ANALYSIS_DATA schema.
+    Production Snowflake database client with MFA/TOTP support.
+    
+    Usage:
+        # With MFA passcode
+        client = RealSnowflakeClient(passcode="123456")
+        
+        # With browser authentication (caches session)
+        client = RealSnowflakeClient(use_browser_auth=True)
     """
     
-    def __init__(self):
-        """Initialize connection to Snowflake using environment variables."""
-        self.account = os.getenv('SNOWFLAKE_ACCOUNT')
-        self.user = os.getenv('SNOWFLAKE_USER')
-        self.password = os.getenv('SNOWFLAKE_PASSWORD')
-        self.warehouse = os.getenv('SNOWFLAKE_WAREHOUSE')
-        self.database = os.getenv('SNOWFLAKE_DATABASE')
-        self.schema = os.getenv('SNOWFLAKE_SCHEMA')
-        self.role = os.getenv('SNOWFLAKE_ROLE')
-        # Set to 'username_password_mfa' for MFA (Duo push) or leave unset for password-only
-        self.authenticator = os.getenv('SNOWFLAKE_AUTHENTICATOR')
-
-        # Validate all required credentials are present
-        if not all([self.account, self.user, self.password, self.warehouse,
-                   self.database, self.schema]):
+    def __init__(self, passcode=None, use_browser_auth=False):
+        """
+        Initialize Snowflake connection.
+        
+        Args:
+            passcode (str, optional): 6-digit MFA/TOTP code from authenticator app
+            use_browser_auth (bool, optional): Use browser-based authentication
+        """
+        # Check required environment variables
+        required_vars = [
+            'SNOWFLAKE_ACCOUNT',
+            'SNOWFLAKE_USER',
+            'SNOWFLAKE_DATABASE'
+        ]
+        
+        missing = [var for var in required_vars if not os.getenv(var)]
+        if missing:
             raise ValueError(
-                "Missing required Snowflake credentials in environment variables. "
-                "Check .env file."
+                f"Missing required Snowflake credentials in environment variables. "
+                f"Check .env file for: {', '.join(missing)}"
             )
         
-        self.connection = None
-        self._connect()
-    
-    def _connect(self):
-        """Establish connection to Snowflake."""
+        # Build connection parameters
+        connection_params = {
+            'account': os.getenv('SNOWFLAKE_ACCOUNT'),
+            'user': os.getenv('SNOWFLAKE_USER'),
+            'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH'),
+            'database': os.getenv('SNOWFLAKE_DATABASE'),
+            'schema': os.getenv('SNOWFLAKE_SCHEMA', 'PUBLIC'),
+        }
+        
+        # Handle authentication methods
+        if use_browser_auth:
+            # Browser-based authentication (opens browser, caches session)
+            connection_params['authenticator'] = 'externalbrowser'
+            logger.info("Using browser-based authentication")
+        elif passcode:
+            # MFA/TOTP passcode authentication
+            connection_params['password'] = os.getenv('SNOWFLAKE_PASSWORD')
+            connection_params['passcode'] = passcode
+            logger.info("Using password + MFA passcode authentication")
+        else:
+            # Password-only (will fail if MFA required)
+            connection_params['password'] = os.getenv('SNOWFLAKE_PASSWORD')
+            logger.info("Using password authentication (MFA may be required)")
+        
         try:
-            connect_kwargs = dict(
-                account=self.account,
-                user=self.user,
-                password=self.password,
-                warehouse=self.warehouse,
-                database=self.database,
-                schema=self.schema,
-                role=self.role,
-            )
-            if self.authenticator:
-                connect_kwargs['authenticator'] = self.authenticator
-                # Cache the MFA token so repeat connections don't re-prompt
-                connect_kwargs['client_store_temporary_credential'] = True
-                logger.info(f"Using authenticator: {self.authenticator}")
-            self.connection = snowflake.connector.connect(**connect_kwargs)
-            logger.info(f"Connected to Snowflake: {self.database}.{self.schema}")
+            logger.info(f"Connecting to Snowflake account: {connection_params['account']}")
+            self.connection = snowflake.connector.connect(**connection_params)
+            logger.info(f"✅ Successfully connected to Snowflake database: {connection_params['database']}")
+            self.account = connection_params['account']
+            self.database = connection_params['database']
         except Exception as e:
             logger.error(f"Failed to connect to Snowflake: {str(e)}")
             raise
-    
+
     def _get_cursor(self):
-        """Get a cursor, reconnecting if necessary."""
-        if self.connection is None or self.connection.is_closed():
-            self._connect()
+        """Get a database cursor."""
+        if not self.connection or self.connection.is_closed():
+            raise Exception("Snowflake connection is closed")
         return self.connection.cursor()
-    
-    def insert_scan_result(self, scan_data: dict) -> str:
+
+    def execute_query(self, query, params=None):
         """
-        Insert a scan result into the scan_results table.
+        Execute a SQL query and return results.
         
         Args:
-            scan_data: Dictionary containing scan information
-                Required keys: filename, malicious_score, severity
-                Optional keys: file_type, file_size_bytes, analysis_duration_seconds,
-                              source_method, user_ip, processing_status
-        
+            query (str): SQL query to execute
+            params (tuple, optional): Query parameters for parameterized queries
+            
         Returns:
-            str: The scan_id of the inserted record
+            list: Query results
+        """
+        cursor = self._get_cursor()
+        try:
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            
+            # Fetch results if available
+            try:
+                results = cursor.fetchall()
+                return results
+            except:
+                # No results to fetch (INSERT, UPDATE, etc.)
+                return None
+        finally:
+            cursor.close()
+
+    def insert_scan_result(self, scan_data):
+        """
+        Insert a file scan result into the database.
+        
+        Args:
+            scan_data (dict): Scan results to insert
+            
+        Returns:
+            str: Scan ID
         """
         scan_id = str(uuid.uuid4())
         
         query = """
-        INSERT INTO scan_results (
-            scan_id, filename, file_type, file_size_bytes, upload_timestamp,
-            malicious_score, severity, analysis_duration_seconds, 
-            source_method, user_ip, processing_status
-        ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-        )
+        INSERT INTO FILE_ANALYSES (
+            scan_id,
+            filename,
+            file_type,
+            file_size,
+            threat_score,
+            severity,
+            scan_timestamp,
+            analysis_duration,
+            md5_hash,
+            sha256_hash
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         
-        values = (
+        params = (
             scan_id,
-            scan_data['filename'],
+            scan_data.get('filename'),
             scan_data.get('file_type'),
-            scan_data.get('file_size_bytes'),
+            scan_data.get('file_size'),
+            scan_data.get('score'),
+            scan_data.get('severity'),
             datetime.utcnow(),
-            scan_data['malicious_score'],
-            scan_data['severity'],
-            scan_data.get('analysis_duration_seconds'),
-            scan_data.get('source_method', 'upload'),
-            scan_data.get('user_ip'),
-            scan_data.get('processing_status', 'completed')
+            scan_data.get('analysis_time_seconds'),
+            scan_data.get('hashes', {}).get('md5'),
+            scan_data.get('hashes', {}).get('sha256')
         )
         
         cursor = self._get_cursor()
         try:
-            cursor.execute(query, values)
+            cursor.execute(query, params)
             self.connection.commit()
             logger.info(f"Inserted scan result: {scan_id}")
+            
+            # Insert indicators
+            indicators = scan_data.get('indicators', {})
+            self._insert_indicators(scan_id, indicators)
+            
             return scan_id
         except Exception as e:
             self.connection.rollback()
@@ -121,241 +173,105 @@ class RealSnowflakeClient:
             raise
         finally:
             cursor.close()
-    
-    def insert_indicators(self, scan_id: str, indicators: list) -> int:
-        """
-        Insert multiple indicators for a scan.
-        
-        Args:
-            scan_id: The scan ID these indicators belong to
-            indicators: List of dicts with keys: indicator_type, indicator_value, confidence
-        
-        Returns:
-            int: Number of indicators inserted
-        """
-        if not indicators:
-            return 0
-        
-        query = """
-        INSERT INTO indicators (
-            indicator_id, scan_id, indicator_type, indicator_value, 
-            confidence, created_at
-        ) VALUES (
-            %s, %s, %s, %s, %s, %s
-        )
-        """
-        
+
+    def _insert_indicators(self, scan_id, indicators):
+        """Insert detected indicators for a scan."""
         cursor = self._get_cursor()
         try:
-            for indicator in indicators:
-                values = (
-                    str(uuid.uuid4()),
-                    scan_id,
-                    indicator['indicator_type'],
-                    indicator['indicator_value'],
-                    indicator.get('confidence', 1.0),
-                    datetime.utcnow()
-                )
-                cursor.execute(query, values)
+            for indicator_type, values in indicators.items():
+                # Skip total_count
+                if indicator_type == 'total_count':
+                    continue
+                
+                # Insert each indicator
+                if isinstance(values, list):
+                    for value in values:
+                        query = """
+                        INSERT INTO INDICATORS (
+                            scan_id,
+                            indicator_type,
+                            indicator_value,
+                            detected_at
+                        ) VALUES (%s, %s, %s, %s)
+                        """
+                        params = (scan_id, indicator_type, str(value), datetime.utcnow())
+                        cursor.execute(query, params)
             
             self.connection.commit()
-            logger.info(f"Inserted {len(indicators)} indicators for scan {scan_id}")
-            return len(indicators)
+            logger.info(f"Inserted indicators for scan: {scan_id}")
         except Exception as e:
             self.connection.rollback()
             logger.error(f"Failed to insert indicators: {str(e)}")
             raise
         finally:
             cursor.close()
-    
-    def insert_email_source(self, scan_id: str, email_data: dict) -> str:
-        """Insert email source information."""
-        email_source_id = str(uuid.uuid4())
-        
-        query = """
-        INSERT INTO email_sources (
-            email_source_id, scan_id, sender_email, recipient_email,
-            subject, received_at, attachment_count
-        ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s
-        )
-        """
-        
-        values = (
-            email_source_id,
-            scan_id,
-            email_data.get('sender_email'),
-            email_data.get('recipient_email'),
-            email_data.get('subject'),
-            email_data.get('received_at'),
-            email_data.get('attachment_count', 1)
-        )
-        
+
+    def get_all_scans(self, limit=100):
+        """Retrieve all scan results."""
+        query = f"SELECT * FROM FILE_ANALYSES ORDER BY scan_timestamp DESC LIMIT {limit}"
         cursor = self._get_cursor()
         try:
-            cursor.execute(query, values)
-            self.connection.commit()
-            logger.info(f"Inserted email source: {email_source_id}")
-            return email_source_id
-        except Exception as e:
-            self.connection.rollback()
-            logger.error(f"Failed to insert email source: {str(e)}")
-            raise
+            cursor.execute(query)
+            results = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+            return [dict(zip(columns, row)) for row in results]
         finally:
             cursor.close()
-    
-    def insert_url_source(self, scan_id: str, url_data: dict) -> str:
-        """Insert URL source information."""
-        url_source_id = str(uuid.uuid4())
-        
-        query = """
-        INSERT INTO url_sources (
-            url_source_id, scan_id, original_url, download_status,
-            download_time_seconds, created_at
-        ) VALUES (
-            %s, %s, %s, %s, %s, %s
-        )
-        """
-        
-        values = (
-            url_source_id,
-            scan_id,
-            url_data.get('original_url'),
-            url_data.get('download_status', 'success'),
-            url_data.get('download_time_seconds'),
-            datetime.utcnow()
-        )
-        
-        cursor = self._get_cursor()
-        try:
-            cursor.execute(query, values)
-            self.connection.commit()
-            logger.info(f"Inserted URL source: {url_source_id}")
-            return url_source_id
-        except Exception as e:
-            self.connection.rollback()
-            logger.error(f"Failed to insert URL source: {str(e)}")
-            raise
-        finally:
-            cursor.close()
-    
-    def insert_file_metadata(self, scan_id: str, metadata: dict) -> int:
-        """
-        Insert file metadata key-value pairs.
-        
-        Args:
-            scan_id: The scan ID this metadata belongs to
-            metadata: Dictionary of metadata key-value pairs
-        
-        Returns:
-            int: Number of metadata entries inserted
-        """
-        if not metadata:
-            return 0
-        
-        query = """
-        INSERT INTO file_metadata (
-            metadata_id, scan_id, metadata_key, metadata_value, created_at
-        ) VALUES (
-            %s, %s, %s, %s, %s
-        )
-        """
-        
-        cursor = self._get_cursor()
-        try:
-            count = 0
-            for key, value in metadata.items():
-                values = (
-                    str(uuid.uuid4()),
-                    scan_id,
-                    key,
-                    str(value),
-                    datetime.utcnow()
-                )
-                cursor.execute(query, values)
-                count += 1
-            
-            self.connection.commit()
-            logger.info(f"Inserted {count} metadata entries for scan {scan_id}")
-            return count
-        except Exception as e:
-            self.connection.rollback()
-            logger.error(f"Failed to insert metadata: {str(e)}")
-            raise
-        finally:
-            cursor.close()
-    
-    def get_scan_by_id(self, scan_id: str) -> dict:
-        """Retrieve a scan result by ID."""
-        query = "SELECT * FROM scan_results WHERE scan_id = %s"
-        
+
+    def get_scan_by_id(self, scan_id):
+        """Retrieve a specific scan by ID."""
+        query = "SELECT * FROM FILE_ANALYSES WHERE scan_id = %s"
         cursor = self._get_cursor()
         try:
             cursor.execute(query, (scan_id,))
             result = cursor.fetchone()
-            
             if result:
                 columns = [desc[0] for desc in cursor.description]
                 return dict(zip(columns, result))
             return None
         finally:
             cursor.close()
-    
-    def get_recent_scans(self, limit: int = 10) -> list:
-        """Retrieve the most recent scans."""
-        query = """
-        SELECT * FROM scan_results 
-        ORDER BY upload_timestamp DESC 
-        LIMIT %s
-        """
-        
-        cursor = self._get_cursor()
-        try:
-            cursor.execute(query, (limit,))
-            results = cursor.fetchall()
-            
-            columns = [desc[0] for desc in cursor.description]
-            return [dict(zip(columns, row)) for row in results]
-        finally:
-            cursor.close()
-    
-    def get_indicators_for_scan(self, scan_id: str) -> list:
+
+    def get_indicators_for_scan(self, scan_id):
         """Retrieve all indicators for a specific scan."""
-        query = "SELECT * FROM indicators WHERE scan_id = %s"
-        
+        query = "SELECT * FROM INDICATORS WHERE scan_id = %s"
         cursor = self._get_cursor()
         try:
             cursor.execute(query, (scan_id,))
             results = cursor.fetchall()
-            
             columns = [desc[0] for desc in cursor.description]
             return [dict(zip(columns, row)) for row in results]
         finally:
             cursor.close()
-    
+
     def close(self):
         """Close the Snowflake connection."""
         if self.connection and not self.connection.is_closed():
             self.connection.close()
             logger.info("Snowflake connection closed")
-    
+
     def __enter__(self):
         """Context manager entry."""
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
         self.close()
 
 
-# Factory function
-def get_snowflake_client():
+def get_snowflake_client(passcode=None, use_browser_auth=False):
     """
-    Factory function to get Snowflake client based on environment.
-    Returns RealSnowflakeClient if all credentials are present.
+    Factory function to get production Snowflake client.
+    
+    Args:
+        passcode (str, optional): MFA/TOTP passcode
+        use_browser_auth (bool, optional): Use browser authentication
+        
+    Returns:
+        RealSnowflakeClient: Connected client instance
     """
     try:
-        return RealSnowflakeClient()
+        return RealSnowflakeClient(passcode=passcode, use_browser_auth=use_browser_auth)
     except Exception as e:
         logger.error(f"Failed to create Snowflake client: {str(e)}")
         raise
