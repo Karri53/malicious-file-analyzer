@@ -33,7 +33,7 @@ from services.scoring import MaliciousScorer
 from services.snowflake_client import get_snowflake_client
 from services.aws_client import get_s3_client
 from services.real_snowflake_client import RealSnowflakeClient
-from services.mock_snowflake_client import MockSnowflakeClient
+from services.snowflake_client import MockSnowflakeClient
 import os
 
 # ============================================================================
@@ -196,6 +196,10 @@ def analyze_upload():
                     "success": True,
                     "scan_id": scan_id,
                     "filename": file.filename,
+                    "file_type": file_data.get("file_type", "unknown"),
+                    "file_size": file_data.get("file_size", 0),
+                    "md5": file_data.get("md5", ""),
+                    "sha256": file_data.get("sha256", ""),
                     "score": score_result["score"],
                     "severity": score_result["severity"],
                     "indicators": indicators,

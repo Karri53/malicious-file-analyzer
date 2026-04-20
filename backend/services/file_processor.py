@@ -238,6 +238,7 @@ class FileProcessor:
             "file_type": file_type,
             "file_size": validation["file_size"],
             "file_hash": hashes["sha256"],
+            "sha256": hashes["sha256"],
             "md5": hashes["md5"],
             "extracted_text": extracted_text,
             "text_length": len(extracted_text),
