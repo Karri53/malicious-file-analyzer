@@ -374,150 +374,169 @@ def analyze_email():
     temp_files = []
 
     try:
-        data = request.get_json()
+        if "file" in request.files:
+            # parse .eml
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "EML file parsing not yet implemented",
+                    }
+                ),
+                400,
+            )
+        else:
+            # existing JSON route
+            data = request.get_json()
 
-        if not data:
-            return jsonify({"success": False, "error": "No JSON body provided"}), 400
+            if not data:
+                return (
+                    jsonify({"success": False, "error": "No JSON body provided"}),
+                    400,
+                )
 
-        sender = data.get("sender", "").strip()
-        subject = data.get("subject", "").strip()
-        body = data.get("body", "").strip()
-        attachments = data.get("attachments", [])
+            sender = data.get("sender", "").strip()
+            subject = data.get("subject", "").strip()
+            body = data.get("body", "").strip()
+            attachments = data.get("attachments", [])
 
-        if not sender and not subject and not body and not attachments:
-            return jsonify({"success": False, "error": "Email payload is empty"}), 400
+            if not sender and not subject and not body and not attachments:
+                return (
+                    jsonify({"success": False, "error": "Email payload is empty"}),
+                    400,
+                )
 
-        extractor = IndicatorExtractor()
-        scorer = MaliciousScorer()
-        processor = FileProcessor()
+            extractor = IndicatorExtractor()
+            scorer = MaliciousScorer()
+            processor = FileProcessor()
 
-        # Analyze email text
-        email_text = f"{subject}\n{body}"
-        email_indicators = extractor.extract_all_indicators(email_text)
+            # Analyze email text
+            email_text = f"{subject}\n{body}"
+            email_indicators = extractor.extract_all_indicators(email_text)
 
-        combined_indicators = {
-            "urls": list(email_indicators.get("urls", [])),
-            "ip_addresses": list(email_indicators.get("ip_addresses", [])),
-            "emails": list(email_indicators.get("emails", [])),
-            "crypto_addresses": list(email_indicators.get("crypto_addresses", [])),
-            "file_hashes": list(email_indicators.get("file_hashes", [])),
-        }
+            combined_indicators = {
+                "urls": list(email_indicators.get("urls", [])),
+                "ip_addresses": list(email_indicators.get("ip_addresses", [])),
+                "emails": list(email_indicators.get("emails", [])),
+                "crypto_addresses": list(email_indicators.get("crypto_addresses", [])),
+                "file_hashes": list(email_indicators.get("file_hashes", [])),
+            }
 
-        attachment_results = []
+            attachment_results = []
 
-        temp_dir = "/tmp/malware-email-attachments"
-        os.makedirs(temp_dir, exist_ok=True)
+            temp_dir = "/tmp/malware-email-attachments"
+            os.makedirs(temp_dir, exist_ok=True)
 
-        for attachment in attachments:
-            filename = attachment.get("filename", "").strip()
-            content_base64 = attachment.get("content_base64", "").strip()
+            for attachment in attachments:
+                filename = attachment.get("filename", "").strip()
+                content_base64 = attachment.get("content_base64", "").strip()
 
-            if not filename or not content_base64:
-                continue
+                if not filename or not content_base64:
+                    continue
 
-            temp_filename = f"{uuid.uuid4()}_{filename}"
-            temp_path = os.path.join(temp_dir, temp_filename)
+                temp_filename = f"{uuid.uuid4()}_{filename}"
+                temp_path = os.path.join(temp_dir, temp_filename)
+
+                try:
+                    file_bytes = base64.b64decode(content_base64)
+                except Exception:
+                    continue
+
+                with open(temp_path, "wb") as f:
+                    f.write(file_bytes)
+
+                temp_files.append(temp_path)
+
+                file_data = processor.process_file(temp_path)
+                extracted_text = file_data.get("extracted_text", "")
+
+                file_indicators = extractor.extract_all_indicators(extracted_text)
+
+                for key in combined_indicators:
+                    combined_indicators[key].extend(file_indicators.get(key, []))
+
+                attachment_results.append(
+                    {
+                        "filename": filename,
+                        "file_type": file_data.get("file_type", "unknown"),
+                        "file_size": file_data.get("file_size", len(file_bytes)),
+                        "indicators": file_indicators,
+                    }
+                )
+
+            # Remove duplicates
+            for key in combined_indicators:
+                combined_indicators[key] = list(set(combined_indicators[key]))
+
+            combined_indicators["total_count"] = sum(
+                len(v) for v in combined_indicators.values() if isinstance(v, list)
+            )
+
+            score_result = scorer.calculate_score(
+                combined_indicators, email_text=email_text
+            )
+
+            scan_id = None
+            snowflake_status = "skipped"
 
             try:
-                file_bytes = base64.b64decode(content_base64)
-            except Exception:
-                continue
+                with get_snowflake_client() as sf:
+                    scan_data = {
+                        "filename": subject if subject else "email_analysis",
+                        "file_type": "email",
+                        "file_size_bytes": 0,
+                        "malicious_score": score_result["score"],
+                        "severity": score_result["severity"],
+                        "analysis_duration_seconds": time.time() - start_time,
+                        "source_method": "email",
+                        "user_ip": request.remote_addr,
+                        "processing_status": "completed",
+                    }
 
-            with open(temp_path, "wb") as f:
-                f.write(file_bytes)
+                    scan_id = sf.insert_scan_result(scan_data)
 
-            temp_files.append(temp_path)
+                    indicator_list = []
+                    for ind_type, values in combined_indicators.items():
+                        if ind_type == "total_count":
+                            continue
+                        for value in values:
+                            indicator_list.append(
+                                {
+                                    "indicator_type": ind_type,
+                                    "indicator_value": value,
+                                    "confidence": 1.0,
+                                }
+                            )
 
-            file_data = processor.process_file(temp_path)
-            extracted_text = file_data.get("extracted_text", "")
+                    if indicator_list:
+                        sf.insert_indicators(scan_id, indicator_list)
 
-            file_indicators = extractor.extract_all_indicators(extracted_text)
+                    snowflake_status = "stored"
 
-            for key in combined_indicators:
-                combined_indicators[key].extend(file_indicators.get(key, []))
+            except Exception as db_error:
+                logger.warning(
+                    f"Snowflake storage skipped/failed during email analysis: {str(db_error)}"
+                )
+                snowflake_status = f"failed_or_skipped: {str(db_error)}"
 
-            attachment_results.append(
-                {
-                    "filename": filename,
-                    "file_type": file_data.get("file_type", "unknown"),
-                    "file_size": file_data.get("file_size", len(file_bytes)),
-                    "indicators": file_indicators,
-                }
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "scan_id": scan_id,
+                        "sender": sender,
+                        "subject": subject,
+                        "score": score_result["score"],
+                        "severity": score_result["severity"],
+                        "indicators": combined_indicators,
+                        "attachment_results": attachment_results,
+                        "snowflake_status": snowflake_status,
+                        "explanation": score_result["reasons"],
+                        "analysis_time_seconds": round(time.time() - start_time, 2),
+                    }
+                ),
+                200,
             )
-
-        # Remove duplicates
-        for key in combined_indicators:
-            combined_indicators[key] = list(set(combined_indicators[key]))
-
-        combined_indicators["total_count"] = sum(
-            len(v) for v in combined_indicators.values() if isinstance(v, list)
-        )
-
-        score_result = scorer.calculate_score(
-            combined_indicators, email_text=email_text
-        )
-
-        scan_id = None
-        snowflake_status = "skipped"
-
-        try:
-            with get_snowflake_client() as sf:
-                scan_data = {
-                    "filename": subject if subject else "email_analysis",
-                    "file_type": "email",
-                    "file_size_bytes": 0,
-                    "malicious_score": score_result["score"],
-                    "severity": score_result["severity"],
-                    "analysis_duration_seconds": time.time() - start_time,
-                    "source_method": "email",
-                    "user_ip": request.remote_addr,
-                    "processing_status": "completed",
-                }
-
-                scan_id = sf.insert_scan_result(scan_data)
-
-                indicator_list = []
-                for ind_type, values in combined_indicators.items():
-                    if ind_type == "total_count":
-                        continue
-                    for value in values:
-                        indicator_list.append(
-                            {
-                                "indicator_type": ind_type,
-                                "indicator_value": value,
-                                "confidence": 1.0,
-                            }
-                        )
-
-                if indicator_list:
-                    sf.insert_indicators(scan_id, indicator_list)
-
-                snowflake_status = "stored"
-
-        except Exception as db_error:
-            logger.warning(
-                f"Snowflake storage skipped/failed during email analysis: {str(db_error)}"
-            )
-            snowflake_status = f"failed_or_skipped: {str(db_error)}"
-
-        return (
-            jsonify(
-                {
-                    "success": True,
-                    "scan_id": scan_id,
-                    "sender": sender,
-                    "subject": subject,
-                    "score": score_result["score"],
-                    "severity": score_result["severity"],
-                    "indicators": combined_indicators,
-                    "attachment_results": attachment_results,
-                    "snowflake_status": snowflake_status,
-                    "explanation": score_result["reasons"],
-                    "analysis_time_seconds": round(time.time() - start_time, 2),
-                }
-            ),
-            200,
-        )
 
     except Exception as e:
         logger.error(f"Email analysis failed: {str(e)}")
