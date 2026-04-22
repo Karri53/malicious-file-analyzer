@@ -3,7 +3,6 @@ import { useTheme } from '../utils/ThemeContext'
 
 const links = [
   { label: 'Home', path: '/' },
-  { label: 'Email Analysis', path: '/email' },
   { label: 'URL Analysis', path: '/url' },
   { label: 'File Upload', path: '/upload' },
 ]
@@ -51,7 +50,6 @@ export default function Nav() {
           style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
           onClick={() => navigate('/')}
         >
-          {/* Use actual logo image */}
           <img 
             src="/OpulenceLogo.png" 
             alt="Team Opulence Logo" 

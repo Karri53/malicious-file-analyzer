@@ -29,10 +29,13 @@ const steps = [
   { label: 'Generating report', state: 'pending' },
 ]
 
+const ACCEPTED_TYPES = '.pdf,.docx,.png,.jpg,.jpeg,.txt,.eml'
+
 export default function FileUpload() {
   const [pageState, setPageState] = useState('default')
   const [dragOver, setDragOver] = useState(false)
   const [fileName, setFileName] = useState('')
+  const [isEmailFile, setIsEmailFile] = useState(false)
   const fileRef = useRef()
   const navigate = useNavigate()
   const { isDark } = useTheme()
@@ -58,6 +61,7 @@ export default function FileUpload() {
   const handleFile = async (file) => {
     if (!file) return
     setFileName(file.name)
+    setIsEmailFile(file.name.toLowerCase().endsWith('.eml'))
     setPageState('processing')
     try {
       const response = await scanFile(file)
@@ -99,7 +103,7 @@ export default function FileUpload() {
         </div>
 
         {/* Centered Header */}
-        <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 60px' }}>
+        <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 40px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
             <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${primary}20`, border: `1px solid ${primary}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📁</div>
             <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: primary, letterSpacing: '0.12em', fontWeight: '600' }}>FILE UPLOAD</span>
@@ -109,9 +113,23 @@ export default function FileUpload() {
             Upload Files for<br />Deep Analysis
           </h1>
           
-          <p style={{ fontFamily: 'DM Sans', fontSize: '16px', color: textMuted, lineHeight: '1.7', maxWidth: '600px', margin: '0 auto' }}>
+          <p style={{ fontFamily: 'DM Sans', fontSize: '16px', color: textMuted, lineHeight: '1.7', maxWidth: '600px', margin: '0 auto 20px' }}>
             Drop any suspicious file directly. We run static analysis, dynamic sandbox detonation, and multi-engine scanning — without it ever touching your machine.
           </p>
+
+          {/* Email file notice */}
+          <div style={{
+            display: 'inline-flex', alignItems: 'flex-start', gap: '10px',
+            background: isDark ? `${warning}10` : `${warning}08`,
+            border: `1px solid ${warning}30`,
+            borderRadius: '10px', padding: '12px 16px',
+            textAlign: 'left',
+          }}>
+            <span style={{ fontSize: '16px', flexShrink: 0 }}>✉️</span>
+            <p style={{ fontFamily: 'DM Sans', fontSize: '13px', color: textMuted, lineHeight: '1.55', margin: 0 }}>
+              <span style={{ color: warning, fontWeight: '600' }}>Analyzing a suspicious email?</span> Upload a saved email file (.eml) to scan its contents, attachments, and links for phishing and malware indicators.
+            </p>
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '24px', maxWidth: '1400px', margin: '0 auto 40px' }}>
@@ -144,17 +162,26 @@ export default function FileUpload() {
                 <button style={{ fontFamily: 'DM Sans', fontSize: '12px', fontWeight: '600', color: primary, background: `${primary}15`, border: `1px solid ${primary}35`, borderRadius: '8px', padding: '10px 20px', cursor: 'pointer', marginBottom: '16px' }}>
                   BROWSE FILES
                 </button>
-                <div style={{ fontFamily: 'DM Sans', fontSize: '11px', color: textFaint }}>.pdf .docx .png .jpg .txt · Max 256 MB</div>
-                <input ref={fileRef} type="file" style={{ display: 'none' }} onChange={e => handleFile(e.target.files[0])} />
+                <div style={{ fontFamily: 'DM Sans', fontSize: '11px', color: textFaint }}>
+                  .pdf .docx .png .jpg .txt <span style={{ color: warning, fontWeight: '600' }}>.eml</span> · Max 256 MB
+                </div>
+                <input ref={fileRef} type="file" accept={ACCEPTED_TYPES} style={{ display: 'none' }} onChange={e => handleFile(e.target.files[0])} />
               </div>
             )}
 
             {pageState === 'processing' && (
               <div style={{ background: surface, border: `2px solid ${warning}40`, borderRadius: '14px', padding: '28px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: surface2, border: `1px solid ${border}`, borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: `${warning}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>📄</div>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: `${warning}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
+                    {isEmailFile ? '✉️' : '📄'}
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: 'DM Sans', fontSize: '12px', fontWeight: '500', color: text }}>{fileName}</div>
+                    {isEmailFile && (
+                      <div style={{ fontFamily: 'DM Sans', fontSize: '10px', color: warning, marginTop: '2px' }}>
+                        Scanning headers, body & attachments
+                      </div>
+                    )}
                   </div>
                   <span style={{ fontFamily: 'DM Sans', fontSize: '11px', fontWeight: '600', color: warning }}>Analyzing...</span>
                 </div>
@@ -176,8 +203,13 @@ export default function FileUpload() {
                 <div style={{ fontFamily: 'Space Mono', fontSize: '14px', color: danger, fontWeight: '700' }}>Upload failed</div>
                 <div style={{ fontFamily: 'DM Sans', fontSize: '13px', color: textMuted, lineHeight: '1.6' }}>We couldn't process this file. See the common reasons below and try again.</div>
                 <div style={{ background: `${danger}08`, border: `1px solid ${danger}20`, borderRadius: '8px', padding: '16px 18px', width: '100%', textAlign: 'left' }}>
-                  {[['File too large.', ' Maximum file size is 256 MB.'], ['Unsupported format.', ' Some archive types require extraction first.'], ['Corrupted file.', ' The file may be incomplete or damaged.']].map(([b, r], i) => (
-                    <div key={i} style={{ display: 'flex', gap: '8px', fontFamily: 'DM Sans', fontSize: '12px', color: textMuted, marginBottom: i < 2 ? '8px' : '0' }}>
+                  {[
+                    ['File too large.', ' Maximum file size is 256 MB.'],
+                    ['Unsupported format.', ' Some archive types require extraction first.'],
+                    ['Corrupted file.', ' The file may be incomplete or damaged.'],
+                    ['Invalid .eml file.', ' Make sure the file is a properly exported email.'],
+                  ].map(([b, r], i, arr) => (
+                    <div key={i} style={{ display: 'flex', gap: '8px', fontFamily: 'DM Sans', fontSize: '12px', color: textMuted, marginBottom: i < arr.length - 1 ? '8px' : '0' }}>
                       <span style={{ color: danger }}>→</span>
                       <span><span style={{ color: text, fontWeight: '500' }}>{b}</span>{r}</span>
                     </div>
@@ -204,9 +236,31 @@ export default function FileUpload() {
                 </div>
               ))}
             </div>
+
+            {/* Email file capabilities box */}
+            <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                <span style={{ fontSize: '14px' }}>✉️</span>
+                <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: warning, letterSpacing: '0.1em', fontWeight: '600' }}>EMAIL FILE (.eml) ANALYSIS</span>
+              </div>
+              {[
+                'Sender & subject extraction',
+                'Body text analysis',
+                'Attachment scanning',
+                'Phishing & malicious link detection',
+              ].map((item, i, arr) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: i < arr.length - 1 ? `1px solid ${borderDim}` : 'none' }}>
+                  <span style={{ color: primary, fontSize: '11px', fontWeight: '700' }}>✓</span>
+                  <span style={{ fontFamily: 'DM Sans', fontSize: '12px', color: textMuted }}>{item}</span>
+                </div>
+              ))}
+            </div>
+
             <div style={{ background: isDark ? `${warning}12` : `${warning}10`, border: `1px solid ${warning}35`, borderRadius: '12px', padding: '18px', display: 'flex', gap: '12px' }}>
               <span style={{ fontSize: '18px', flexShrink: 0 }}>⚠️</span>
-              <p style={{ fontFamily: 'DM Sans', fontSize: '12px', color: textMuted, lineHeight: '1.6' }}><span style={{ color: warning, fontWeight: '600' }}>Files are never stored.</span> Uploaded files are analyzed in memory and immediately discarded. Only the scan result metadata is retained.</p>
+              <p style={{ fontFamily: 'DM Sans', fontSize: '12px', color: textMuted, lineHeight: '1.6', margin: 0 }}>
+                <span style={{ color: warning, fontWeight: '600' }}>Files are never stored.</span> Uploaded files are analyzed in memory and immediately discarded. Only the scan result metadata is retained.
+              </p>
             </div>
           </div>
 
