@@ -1,16 +1,46 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '../utils/ThemeContext'
+import Footer from '../components/Footer'
 
-const getScoreColor = s => s >= 70 ? '#E05555' : s >= 31 ? '#D0BC77' : '#77997B'
+const getScoreColor = (s, isDark) => {
+  if (s >= 70) return isDark ? '#E89090' : '#C96B6B'
+  if (s >= 31) return isDark ? '#F0B76F' : '#D49A4A'
+  return isDark ? '#6FBF88' : '#5C9A73'
+}
+
 const getLabel = s => s >= 70 ? 'MALICIOUS' : s >= 31 ? 'WARNING' : 'CLEAN'
-const getBadge = s => s >= 70
-  ? { color: '#E05555', bg: 'rgba(224,85,85,0.1)', border: 'rgba(224,85,85,0.3)' }
-  : s >= 31
-  ? { color: '#D0BC77', bg: 'rgba(208,188,119,0.1)', border: 'rgba(208,188,119,0.3)' }
-  : { color: '#77997B', bg: 'rgba(119,153,123,0.12)', border: 'rgba(119,153,123,0.3)' }
 
-const sevColor = sev => sev === 'H' ? '#E05555' : sev === 'M' ? '#D0BC77' : '#77997B'
-const sevBg = sev => sev === 'H' ? 'rgba(224,85,85,0.15)' : sev === 'M' ? 'rgba(208,188,119,0.12)' : 'rgba(119,153,123,0.12)'
+const getBadge = (s, isDark) => {
+  if (s >= 70)
+    return { 
+      color: isDark ? '#E89090' : '#C96B6B', 
+      bg: isDark ? 'rgba(232,144,144,0.2)' : 'rgba(201,107,107,0.15)', 
+      border: isDark ? 'rgba(232,144,144,0.4)' : 'rgba(201,107,107,0.3)' 
+    }
+  if (s >= 31)
+    return { 
+      color: isDark ? '#F0B76F' : '#D49A4A', 
+      bg: isDark ? 'rgba(240,183,111,0.2)' : 'rgba(212,154,74,0.15)', 
+      border: isDark ? 'rgba(240,183,111,0.4)' : 'rgba(212,154,74,0.3)' 
+    }
+  return { 
+    color: isDark ? '#6FBF88' : '#5C9A73', 
+    bg: isDark ? 'rgba(111,191,136,0.2)' : 'rgba(92,154,115,0.15)', 
+    border: isDark ? 'rgba(111,191,136,0.4)' : 'rgba(92,154,115,0.3)' 
+  }
+}
+
+const sevColor = (sev, isDark) => {
+  if (sev === 'H') return isDark ? '#E89090' : '#C96B6B'
+  if (sev === 'M') return isDark ? '#F0B76F' : '#D49A4A'
+  return isDark ? '#6FBF88' : '#5C9A73'
+}
+
+const sevBg = (sev, isDark) => {
+  if (sev === 'H') return isDark ? 'rgba(232,144,144,0.2)' : 'rgba(201,107,107,0.15)'
+  if (sev === 'M') return isDark ? 'rgba(240,183,111,0.2)' : 'rgba(212,154,74,0.15)'
+  return isDark ? 'rgba(111,191,136,0.2)' : 'rgba(92,154,115,0.15)'
+}
 
 const demoResult = {
   filename: 'invoice_march_2025.pdf.exe',
@@ -37,116 +67,115 @@ export default function Results() {
   const { isDark } = useTheme()
   const result = apiResult || demoResult
   const score = result.score || result.malicious_score * 100 || 0
-  const scoreColor = getScoreColor(score)
-  const badge = getBadge(score)
+  const scoreColor = getScoreColor(score, isDark)
+  const badge = getBadge(score, isDark)
   const circumference = 2 * Math.PI * 58
   const offset = circumference - (score / 100) * circumference
 
-  const bg          = isDark ? '#0A0906'  : '#F5F0E8'
-  const surface     = isDark ? '#111009'  : '#FFFFFF'
-  const border      = isDark ? '#252015'  : '#E0D5C5'
-  const textPrimary = isDark ? '#EDEDCD'  : '#1A1508'
-  const textMuted   = isDark ? '#7A7260'  : '#6B5D45'
-  const textFaint   = isDark ? '#4A4535'  : '#A89880'
-  const ringTrack   = isDark ? '#252015'  : '#E0D5C5'
+  const bg = isDark ? '#1A2520' : '#F5F5F0'
+  const surface = isDark ? '#243530' : '#FFFFFF'
+  const border = isDark ? '#3A4A42' : '#D4D9CE'
+  const text = isDark ? '#E8EDE9' : '#2C3E35'
+  const textMuted = isDark ? '#9FACA3' : '#5A6B5C'
+  const textFaint = isDark ? '#6B7B70' : '#8B9C8D'
+  const ringTrack = isDark ? '#3A4A42' : '#D4D9CE'
+  const accent = isDark ? '#E0C58F' : '#B8935F'
 
   return (
-    <div style={{ padding: '56px 120px 80px', background: bg, minHeight: '100vh', position: 'relative', zIndex: 0 }}>
+    <div style={{ background: bg, minHeight: '100vh' }}>
+      <div style={{ padding: '56px 120px 0' }}>
 
-      {/* Breadcrumb */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '32px', fontFamily: 'Space Mono', fontSize: '11px' }}>
-        <span style={{ color: textMuted, cursor: 'pointer' }} onClick={() => navigate('/')}>Home</span>
-        <span style={{ color: textFaint }}>/</span>
-        <span style={{ color: '#D0BC77' }}>Results</span>
-      </div>
+        {/* Breadcrumb */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '32px', fontFamily: 'Space Mono', fontSize: '11px' }}>
+          <span style={{ color: textMuted, cursor: 'pointer' }} onClick={() => navigate('/')}>Home</span>
+          <span style={{ color: textFaint }}>/</span>
+          <span style={{ color: accent }}>Results</span>
+        </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '28px', maxWidth: '1400px', margin: '0 auto 40px' }}>
 
-        {/* Left: threat summary */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textFaint, letterSpacing: '0.14em' }}>THREAT SUMMARY</span>
-            <div style={{ flex: 1, height: '1px', background: border }} />
-          </div>
-          <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: '14px', padding: '26px' }}>
-            <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: `1px solid ${border}` }}>
-              <div style={{ fontFamily: 'Space Mono', fontSize: '13px', color: textPrimary, fontWeight: '700', marginBottom: '4px', wordBreak: 'break-all' }}>{result.filename}</div>
-              <div style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textMuted }}>{result.meta}</div>
+          {/* Left: threat summary */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: textFaint, letterSpacing: '0.12em', fontWeight: '600' }}>THREAT SUMMARY</span>
+              <div style={{ flex: 1, height: '1px', background: border }} />
             </div>
+            <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: '14px', padding: '28px' }}>
+              <div style={{ marginBottom: '24px', paddingBottom: '24px', borderBottom: `1px solid ${border}` }}>
+                <div style={{ fontFamily: 'Space Mono', fontSize: '14px', color: text, fontWeight: '700', marginBottom: '6px', wordBreak: 'break-all' }}>{result.filename}</div>
+                <div style={{ fontFamily: 'DM Sans', fontSize: '11px', color: textMuted }}>{result.meta}</div>
+              </div>
 
-            {/* Score ring */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 0 20px' }}>
-              <div style={{ position: 'relative', width: '140px', height: '140px', marginBottom: '14px' }}>
-                <svg width="140" height="140" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)' }}>
-                  <circle cx="70" cy="70" r="58" fill="none" stroke={ringTrack} strokeWidth="10" />
-                  <circle cx="70" cy="70" r="58" fill="none" stroke={scoreColor} strokeWidth="10"
-                    strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" />
-                </svg>
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontFamily: 'Space Mono', fontSize: '36px', fontWeight: '700', color: scoreColor, lineHeight: 1 }}>{Math.round(score)}</div>
-                  <div style={{ fontFamily: 'Space Mono', fontSize: '9px', color: textMuted, marginTop: '4px' }}>THREAT SCORE</div>
+              {/* Score ring */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0 24px' }}>
+                <div style={{ position: 'relative', width: '150px', height: '150px', marginBottom: '16px' }}>
+                  <svg width="150" height="150" viewBox="0 0 150 150" style={{ transform: 'rotate(-90deg)' }}>
+                    <circle cx="75" cy="75" r="58" fill="none" stroke={ringTrack} strokeWidth="11" />
+                    <circle cx="75" cy="75" r="58" fill="none" stroke={scoreColor} strokeWidth="11"
+                      strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" />
+                  </svg>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontFamily: 'Space Mono', fontSize: '40px', fontWeight: '700', color: scoreColor, lineHeight: 1 }}>{Math.round(score)}</div>
+                    <div style={{ fontFamily: 'DM Sans', fontSize: '10px', color: textMuted, marginTop: '6px', letterSpacing: '0.05em' }}>THREAT SCORE</div>
+                  </div>
                 </div>
+                <span style={{ fontFamily: 'DM Sans', fontSize: '12px', fontWeight: '700', color: badge.color, background: badge.bg, border: `1px solid ${badge.border}`, borderRadius: '100px', padding: '6px 20px', letterSpacing: '0.06em' }}>
+                  {getLabel(score)}
+                </span>
               </div>
-              <span style={{ fontFamily: 'Space Mono', fontSize: '11px', fontWeight: '700', color: badge.color, background: badge.bg, border: `1px solid ${badge.border}`, borderRadius: '100px', padding: '5px 18px', letterSpacing: '0.08em' }}>
-                {getLabel(score)}
-              </span>
+
+              {/* Metadata */}
+              {[
+                ['FILE TYPE', result.fileType || result.file_type || 'Unknown'],
+                ['FILE SIZE', result.fileSize || result.file_size || 'Unknown'],
+                ['MD5', result.md5 || '—'],
+                ['SHA256', result.sha256 || '—'],
+                ['SCAN TIME', result.scanTime || result.scan_time || '—'],
+                ['SCANNED', result.scanned || '—'],
+              ].map(([k, v], i, arr) => (
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < arr.length - 1 ? `1px solid ${border}` : 'none' }}>
+                  <span style={{ fontFamily: 'DM Sans', fontSize: '11px', color: textFaint, letterSpacing: '0.04em', fontWeight: '600' }}>{k}</span>
+                  <span style={{ fontFamily: 'DM Sans', fontSize: '12px', color: text, textAlign: 'right', wordBreak: 'break-all', maxWidth: '200px' }}>{v}</span>
+                </div>
+              ))}
+
+              <div style={{ marginTop: '24px' }}>
+                <span onClick={() => navigate('/')} style={{ fontFamily: 'DM Sans', fontSize: '12px', fontWeight: '600', color: accent, cursor: 'pointer' }}>
+                  Run new scan →
+                </span>
+              </div>
             </div>
+          </div>
 
-            {/* Metadata */}
-            {[
-              ['FILE TYPE', result.fileType || result.file_type || 'Unknown'],
-              ['FILE SIZE', result.fileSize || result.file_size || 'Unknown'],
-              ['MD5', result.md5 || '—'],
-              ['SHA256', result.sha256 || '—'],
-              ['SCAN TIME', result.scanTime || result.scan_time || '—'],
-              ['SCANNED', result.scanned || '—'],
-            ].map(([k, v], i, arr) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: i < arr.length - 1 ? `1px solid ${border}` : 'none' }}>
-                <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textFaint, letterSpacing: '0.06em' }}>{k}</span>
-                <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: textPrimary, textAlign: 'right', wordBreak: 'break-all', maxWidth: '180px' }}>{v}</span>
-              </div>
-            ))}
-
-            <div style={{ marginTop: '20px' }}>
-              <span onClick={() => navigate('/')} style={{ fontFamily: 'Space Mono', fontSize: '11px', color: textMuted, cursor: 'pointer' }}>
-                Run new scan →
-              </span>
+          {/* Right: indicators */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: textFaint, letterSpacing: '0.12em', fontWeight: '600' }}>SUSPICIOUS INDICATORS</span>
+              <div style={{ flex: 1, height: '1px', background: border }} />
+            </div>
+            <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: '14px', padding: '28px' }}>
+              {Object.entries(result.indicators || {}).filter(([key]) => key !== 'total_count').flatMap(([type, values]) =>
+                (Array.isArray(values) ? values : []).map(value => ({ type, value }))
+              ).map((ind, i, arr) => (
+                <div key={i} style={{ display: 'flex', gap: '14px', padding: '14px 0', borderBottom: i < arr.length - 1 ? `1px solid ${border}` : 'none', alignItems: 'flex-start' }}>
+                  <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: sevBg(ind.sev || ind.severity, isDark), border: `1px solid ${sevColor(ind.sev || ind.severity, isDark)}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Space Mono', fontSize: '10px', fontWeight: '700', color: sevColor(ind.sev || ind.severity, isDark), flexShrink: 0, marginTop: '2px' }}>
+                    {ind.sev || ind.severity || 'M'}
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: 'Space Mono', fontSize: '13px', color: text, fontWeight: '700', marginBottom: '4px' }}>{ind.title || ind.indicator || ind.type}</div>
+                    <div style={{ fontFamily: 'DM Sans', fontSize: '13px', color: textMuted, lineHeight: '1.6' }}>{ind.desc || ind.description || ind.value}</div>
+                  </div>
+                </div>
+              ))}
+              {(!result.indicators || Object.keys(result.indicators).length === 0 || Object.entries(result.indicators).filter(([key]) => key !== 'total_count').flatMap(([type, values]) => (Array.isArray(values) ? values : [])).length === 0) && (
+                <div style={{ textAlign: 'center', padding: '40px', fontFamily: 'DM Sans', fontSize: '13px', color: textMuted }}>No suspicious indicators found</div>
+              )}
             </div>
           </div>
         </div>
-
-        {/* Right: indicators */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <span style={{ fontFamily: 'Space Mono', fontSize: '10px', color: textFaint, letterSpacing: '0.14em' }}>SUSPICIOUS INDICATORS</span>
-            <div style={{ flex: 1, height: '1px', background: border }} />
-          </div>
-          <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: '14px', padding: '26px' }}>
-            {Object.entries(result.indicators || {}).filter(([key]) => key !== 'total_count').flatMap(([type, values]) =>
-              (Array.isArray(values) ? values : []).map(value => ({ type, value }))
-            ).map((ind, i, arr) => (
-              <div key={i} style={{ display: 'flex', gap: '12px', padding: '12px 0', borderBottom: i < arr.length - 1 ? `1px solid ${border}` : 'none', alignItems: 'flex-start' }}>
-                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: sevBg(ind.sev || ind.severity), border: `1px solid ${sevColor(ind.sev || ind.severity)}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Space Mono', fontSize: '9px', fontWeight: '700', color: sevColor(ind.sev || ind.severity), flexShrink: 0, marginTop: '1px' }}>
-                  {ind.sev || ind.severity || 'M'}
-                </div>
-                <div>
-                  <div style={{ fontFamily: 'Space Mono', fontSize: '12px', color: textPrimary, fontWeight: '700', marginBottom: '3px' }}>{ind.title || ind.indicator || ind.type}</div>
-                  <div style={{ fontSize: '12px', color: textMuted, fontWeight: '300', lineHeight: '1.5' }}>{ind.desc || ind.description || ind.value}</div>
-                </div>
-              </div>
-            ))}
-            {(!result.indicators || Object.keys(result.indicators).length === 0) && (
-              <div style={{ textAlign: 'center', padding: '32px', fontFamily: 'Space Mono', fontSize: '12px', color: textFaint }}>No indicators found</div>
-            )}
-          </div>
-        </div>
       </div>
 
-      {/* Footer */}
-      <div style={{ marginTop: '60px', borderTop: `1px solid ${border}`, paddingTop: '20px', display: 'flex', justifyContent: 'space-between', fontFamily: 'Space Mono', fontSize: '10px', color: textFaint }}>
-        <span><span style={{ color: '#D0BC77' }}>Opulence</span> · Senior Design Project · Spring 2026</span>
-        <span style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${border}`, borderRadius: '6px', padding: '3px 10px', color: textMuted }}>NSA GenCyber Partnership</span>
-      </div>
+      <Footer />
     </div>
   )
 }
