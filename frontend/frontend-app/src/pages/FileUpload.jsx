@@ -70,6 +70,7 @@ export default function FileUpload() {
         state: {
           filename: data.filename,
           meta: `${data.indicators?.total_count || 0} indicator${(data.indicators?.total_count || 0) === 1 ? '' : 's'} · Submitted via File Upload`,
+          extracted_text: data.extracted_text || '',
           score: normalizeScore(data.score),
           fileType: data.file_type || 'Unknown',
           fileSize: data.file_size > 1024 * 1024

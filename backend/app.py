@@ -11,6 +11,7 @@ import os
 import logging
 import time
 import uuid
+import re
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -141,9 +142,22 @@ def analyze_upload():
         processor = FileProcessor()
         file_data = processor.process_file(temp_path)
 
+        # Normalize extracted / OCR text
+        extracted_text = file_data.get("extracted_text", "")
+        extracted_text = extracted_text.replace("\n", " ")
+        extracted_text = extracted_text.replace("\r", " ")
+        extracted_text = extracted_text.replace("\t", " ")
+        extracted_text = " ".join(extracted_text.split())
+
+        # OCR cleanup for split IP addresses like 172.67.46 8
+
+        extracted_text = re.sub(
+            r"(\d{1,3}\.\d{1,3}\.\d{1,3}) (\d{1,3})", r"\1.\2", extracted_text
+        )
+
         # Step 2: Extract malicious indicators from text
         extractor = IndicatorExtractor()
-        indicators = extractor.extract_all_indicators(file_data["extracted_text"])
+        indicators = extractor.extract_all_indicators(extracted_text)
 
         # Step 3: Calculate malicious score
         scorer = MaliciousScorer()
@@ -205,6 +219,7 @@ def analyze_upload():
                     "indicators": indicators,
                     "reasons": score_result["reasons"],
                     "suspicious_indicators": score_result["reasons"],
+                    "extracted_text": extracted_text,
                     "analysis_time_seconds": round(time.time() - start_time, 2),
                 }
             ),

@@ -28,13 +28,21 @@ except ImportError:
     logging.warning("python-docx not available")
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageOps, ImageFilter
     from PIL.ExifTags import TAGS
 
     IMAGE_AVAILABLE = True
 except ImportError:
     IMAGE_AVAILABLE = False
     logging.warning("Pillow not available")
+
+try:
+    import pytesseract
+
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
+    logging.warning("pytesseract not available")
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +53,7 @@ class FileProcessor:
     Supports PDF, DOCX, PNG, JPG, TXT file types.
     """
 
-    SUPPORTED_TYPES = [".pdf", ".docx", ".png", ".jpg", ".jpeg", ".txt"]
+    SUPPORTED_TYPES = [".pdf", ".docx", ".png", ".jpg", ".jpeg", ".webp", ".txt"]
     MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
     def __init__(self):
@@ -195,6 +203,38 @@ class FileProcessor:
 
         return metadata
 
+    def extract_text_from_image(self, file_path: str) -> str:
+        """
+        Extract text from image using OCR
+
+        WHY: Images may contain phishing URLs, emails, or malicious instructions
+        """
+        if not IMAGE_AVAILABLE or not OCR_AVAILABLE:
+            logger.warning("OCR dependencies not available")
+            return ""
+
+        try:
+            image = Image.open(file_path).convert("L")  # grayscale
+
+            # Improve OCR quality
+            image = ImageOps.autocontrast(image)
+            image = image.filter(ImageFilter.SHARPEN)
+            image = image.point(lambda p: 255 if p > 160 else 0)
+
+            pytesseract.pytesseract.tesseract_cmd = (
+                r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+            )
+
+            text = pytesseract.image_to_string(image, lang="eng")
+
+            logger.info(f"OCR extracted {len(text)} characters from image")
+            logger.info(f"OCR preview: {text[:500]}")
+            return text or ""
+
+        except Exception as e:
+            logger.error(f"OCR extraction failed: {e}")
+            return ""
+
     def process_file(self, file_path: str) -> Dict:
         """
         Process file and extract all text/metadata
@@ -226,8 +266,9 @@ class FileProcessor:
             extracted_text = self.extract_text_from_pdf(file_path)
         elif file_type == ".docx":
             extracted_text = self.extract_text_from_docx(file_path)
-        elif file_type in [".png", ".jpg", ".jpeg"]:
+        elif file_type in [".png", ".jpg", ".jpeg", ".webp"]:
             metadata = self.extract_metadata_from_image(file_path)
+            extracted_text = self.extract_text_from_image(file_path)
         elif file_type == ".txt":
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 extracted_text = f.read()

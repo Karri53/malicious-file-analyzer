@@ -247,6 +247,51 @@ export default function Results() {
                   No suspicious indicators found
                 </div>
               )}
+              {result.extracted_text && result.extracted_text.trim().length > 0 && (
+                <div style={{ marginTop: '28px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      marginBottom: '20px'
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'Space Mono',
+                        fontSize: '11px',
+                        color: textFaint,
+                        letterSpacing: '0.12em',
+                        fontWeight: '600'
+                      }}
+                    >
+                      EXTRACTED TEXT / OCR OUTPUT
+                    </span>
+
+                    <div style={{ flex: 1, height: '1px', background: border }} />
+                  </div>
+
+                  <div
+                    style={{
+                      background: surface,
+                      border: `1px solid ${border}`,
+                      borderRadius: '14px',
+                      padding: '24px',
+                      maxHeight: '320px',
+                      overflowY: 'auto',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      fontFamily: 'DM Sans',
+                      fontSize: '13px',
+                      color: textMuted,
+                      lineHeight: '1.6'
+                    }}
+                  >
+                    {result.extracted_text}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
