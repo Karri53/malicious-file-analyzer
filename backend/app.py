@@ -203,7 +203,8 @@ def analyze_upload():
                     "score": score_result["score"],
                     "severity": score_result["severity"],
                     "indicators": indicators,
-                    "explanation": score_result["reasons"],
+                    "reasons": score_result["reasons"],
+                    "suspicious_indicators": score_result["reasons"],
                     "analysis_time_seconds": round(time.time() - start_time, 2),
                 }
             ),
@@ -289,9 +290,27 @@ def analyze_url():
         extractor = IndicatorExtractor()
         indicators = extractor.extract_all_indicators(extracted_text)
 
+        # Also extract indicators directly from the submitted URL itself
+        url_indicators = extractor.extract_all_indicators(url)
+
+        # Merge URL indicators into file indicators
+        for key, values in url_indicators.items():
+            if key == "total_count":
+                continue
+            if key not in indicators:
+                indicators[key] = []
+            indicators[key].extend(values)
+
+        # Recalculate total_count after merging
+        indicators["total_count"] = sum(
+            len(v)
+            for k, v in indicators.items()
+            if k != "total_count" and isinstance(v, list)
+        )
+
         # Step 4: Calculate malicious score
         scorer = MaliciousScorer()
-        score_result = scorer.calculate_score(indicators)
+        score_result = scorer.calculate_score(indicators, email_text=url)
 
         # Step 5: Store results in Snowflake
         # Prepare scan data
@@ -349,9 +368,15 @@ def analyze_url():
                     "scan_id": scan_id,
                     "filename": filename,
                     "url": url,
+                    "file_type": file_data.get("file_type", "Unknown"),
+                    "file_size": download_result.get("size", 0),
+                    "md5": file_data.get("md5", ""),
+                    "sha256": file_data.get("sha256", ""),
                     "score": score_result["score"],
                     "severity": score_result["severity"],
                     "indicators": indicators,
+                    "reasons": score_result["reasons"],
+                    "suspicious_indicators": score_result["reasons"],
                     "explanation": score_result["reasons"],
                     "analysis_time_seconds": round(time.time() - start_time, 2),
                 }

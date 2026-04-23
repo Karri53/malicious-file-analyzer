@@ -81,6 +81,8 @@ export default function FileUpload() {
           scanned: new Date().toLocaleString(),
           indicators: formatIndicators(data.indicators),
           rawIndicators: data.indicators,
+          reasons: data.reasons || [],
+          suspicious_indicators: data.suspicious_indicators || [],
           severity: data.severity,
           explanation: data.explanation,
         }
@@ -108,11 +110,11 @@ export default function FileUpload() {
             <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${primary}20`, border: `1px solid ${primary}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📁</div>
             <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: primary, letterSpacing: '0.12em', fontWeight: '600' }}>FILE UPLOAD</span>
           </div>
-          
+
           <h1 style={{ fontFamily: 'Space Mono', fontSize: '42px', fontWeight: '700', color: text, lineHeight: '1.2', marginBottom: '16px', letterSpacing: '-0.01em' }}>
             Upload Files for<br />Deep Analysis
           </h1>
-          
+
           <p style={{ fontFamily: 'DM Sans', fontSize: '16px', color: textMuted, lineHeight: '1.7', maxWidth: '600px', margin: '0 auto 20px' }}>
             Drop any suspicious file directly. We run static analysis, dynamic sandbox detonation, and multi-engine scanning — without it ever touching your machine.
           </p>

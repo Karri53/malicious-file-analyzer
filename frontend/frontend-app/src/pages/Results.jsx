@@ -12,21 +12,21 @@ const getLabel = s => s >= 70 ? 'MALICIOUS' : s >= 31 ? 'WARNING' : 'CLEAN'
 
 const getBadge = (s, isDark) => {
   if (s >= 70)
-    return { 
-      color: isDark ? '#E89090' : '#C96B6B', 
-      bg: isDark ? 'rgba(232,144,144,0.2)' : 'rgba(201,107,107,0.15)', 
-      border: isDark ? 'rgba(232,144,144,0.4)' : 'rgba(201,107,107,0.3)' 
+    return {
+      color: isDark ? '#E89090' : '#C96B6B',
+      bg: isDark ? 'rgba(232,144,144,0.2)' : 'rgba(201,107,107,0.15)',
+      border: isDark ? 'rgba(232,144,144,0.4)' : 'rgba(201,107,107,0.3)'
     }
   if (s >= 31)
-    return { 
-      color: isDark ? '#F0B76F' : '#D49A4A', 
-      bg: isDark ? 'rgba(240,183,111,0.2)' : 'rgba(212,154,74,0.15)', 
-      border: isDark ? 'rgba(240,183,111,0.4)' : 'rgba(212,154,74,0.3)' 
+    return {
+      color: isDark ? '#F0B76F' : '#D49A4A',
+      bg: isDark ? 'rgba(240,183,111,0.2)' : 'rgba(212,154,74,0.15)',
+      border: isDark ? 'rgba(240,183,111,0.4)' : 'rgba(212,154,74,0.3)'
     }
-  return { 
-    color: isDark ? '#6FBF88' : '#5C9A73', 
-    bg: isDark ? 'rgba(111,191,136,0.2)' : 'rgba(92,154,115,0.15)', 
-    border: isDark ? 'rgba(111,191,136,0.4)' : 'rgba(92,154,115,0.3)' 
+  return {
+    color: isDark ? '#6FBF88' : '#5C9A73',
+    bg: isDark ? 'rgba(111,191,136,0.2)' : 'rgba(92,154,115,0.15)',
+    border: isDark ? 'rgba(111,191,136,0.4)' : 'rgba(92,154,115,0.3)'
   }
 }
 
@@ -67,6 +67,29 @@ export default function Results() {
   const { isDark } = useTheme()
   const result = apiResult || demoResult
   const score = result.score || result.malicious_score * 100 || 0
+  const suspiciousItems =
+    Array.isArray(result.suspicious_indicators) && result.suspicious_indicators.length > 0
+      ? result.suspicious_indicators.map((reason) => ({
+        severity: 'M',
+        title: 'Suspicious Finding',
+        description: reason,
+      }))
+      : Array.isArray(result.reasons) && result.reasons.length > 0
+        ? result.reasons.map((reason) => ({
+          severity: 'M',
+          title: 'Suspicious Finding',
+          description: reason,
+        }))
+        : Object.entries(result.indicators || {})
+          .filter(([key]) => key !== 'total_count')
+          .flatMap(([type, values]) =>
+            (Array.isArray(values) ? values : []).map((value) => ({
+              severity: 'M',
+              title: type,
+              description:
+                typeof value === 'object' ? JSON.stringify(value) : String(value),
+            }))
+          )
   const scoreColor = getScoreColor(score, isDark)
   const badge = getBadge(score, isDark)
   const circumference = 2 * Math.PI * 58
@@ -154,21 +177,75 @@ export default function Results() {
               <div style={{ flex: 1, height: '1px', background: border }} />
             </div>
             <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: '14px', padding: '28px' }}>
-              {Object.entries(result.indicators || {}).filter(([key]) => key !== 'total_count').flatMap(([type, values]) =>
-                (Array.isArray(values) ? values : []).map(value => ({ type, value }))
-              ).map((ind, i, arr) => (
-                <div key={i} style={{ display: 'flex', gap: '14px', padding: '14px 0', borderBottom: i < arr.length - 1 ? `1px solid ${border}` : 'none', alignItems: 'flex-start' }}>
-                  <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: sevBg(ind.sev || ind.severity, isDark), border: `1px solid ${sevColor(ind.sev || ind.severity, isDark)}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Space Mono', fontSize: '10px', fontWeight: '700', color: sevColor(ind.sev || ind.severity, isDark), flexShrink: 0, marginTop: '2px' }}>
-                    {ind.sev || ind.severity || 'M'}
+              {suspiciousItems.map((ind, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    gap: '14px',
+                    padding: '14px 0',
+                    borderBottom: i < suspiciousItems.length - 1 ? `1px solid ${border}` : 'none',
+                    alignItems: 'flex-start'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '50%',
+                      background: sevBg(ind.severity, isDark),
+                      border: `1px solid ${sevColor(ind.severity, isDark)}50`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: 'Space Mono',
+                      fontSize: '10px',
+                      fontWeight: '700',
+                      color: sevColor(ind.severity, isDark),
+                      flexShrink: 0,
+                      marginTop: '2px'
+                    }}
+                  >
+                    {ind.severity}
                   </div>
                   <div>
-                    <div style={{ fontFamily: 'Space Mono', fontSize: '13px', color: text, fontWeight: '700', marginBottom: '4px' }}>{ind.title || ind.indicator || ind.type}</div>
-                    <div style={{ fontFamily: 'DM Sans', fontSize: '13px', color: textMuted, lineHeight: '1.6' }}>{ind.desc || ind.description || ind.value}</div>
+                    <div
+                      style={{
+                        fontFamily: 'Space Mono',
+                        fontSize: '13px',
+                        color: text,
+                        fontWeight: '700',
+                        marginBottom: '4px'
+                      }}
+                    >
+                      {ind.title}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: 'DM Sans',
+                        fontSize: '13px',
+                        color: textMuted,
+                        lineHeight: '1.6'
+                      }}
+                    >
+                      {ind.description}
+                    </div>
                   </div>
                 </div>
               ))}
-              {(!result.indicators || Object.keys(result.indicators).length === 0 || Object.entries(result.indicators).filter(([key]) => key !== 'total_count').flatMap(([type, values]) => (Array.isArray(values) ? values : [])).length === 0) && (
-                <div style={{ textAlign: 'center', padding: '40px', fontFamily: 'DM Sans', fontSize: '13px', color: textMuted }}>No suspicious indicators found</div>
+
+              {suspiciousItems.length === 0 && (
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: '40px',
+                    fontFamily: 'DM Sans',
+                    fontSize: '13px',
+                    color: textMuted
+                  }}
+                >
+                  No suspicious indicators found
+                </div>
               )}
             </div>
           </div>

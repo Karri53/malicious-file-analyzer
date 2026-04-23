@@ -5,6 +5,7 @@ Score ranges from 0.0 (safe) to 1.0 (highly malicious).
 """
 
 import logging
+import re
 from typing import Dict, List
 
 logger = logging.getLogger(__name__)
@@ -15,24 +16,28 @@ class MaliciousScorer:
     Calculates maliciousness score based on indicators found in file.
     """
 
-    # Scoring weights (how much each indicator contributes)
+    # Scoring weights
     WEIGHTS = {
-        "url": 0.15,
-        "suspicious_tld": 0.15,
-        "ip_address": 0.10,
-        "email": 0.05,
-        "crypto_address": 0.25,
-        "file_hash": 0.10,
-        "multiple_indicators": 0.10,
-        "port_in_url": 0.10,
-        "phishing_keyword": 0.20,
-        "multiple_urls": 0.10,
+        "url": 0.18,
+        "extra_url": 0.05,
+        "suspicious_tld": 0.20,
+        "ip_address": 0.12,
+        "email": 0.08,
+        "crypto_address": 0.30,
+        "port_in_url": 0.18,
+        "phishing_keyword": 0.10,
+        "multiple_indicators": 0.15,
+        "combo_bonus": 0.15,
+        "url_path_keyword": 0.10,
+        "dangerous_url_extension": 0.20,
+        "ip_based_url": 0.15,
+        "url_shortener": 0.12,
     }
 
     # Suspicious top-level domains often used by attackers
     SUSPICIOUS_TLDS = [".tk", ".ml", ".ga", ".cf", ".gq", ".zip", ".top", ".work"]
 
-    # Phishing Keywords Often Used
+    # Phishing keywords often used
     PHISHING_KEYWORDS = [
         "urgent",
         "immediately",
@@ -47,6 +52,38 @@ class MaliciousScorer:
         "update account",
     ]
 
+    URL_PATH_KEYWORDS = [
+        "login",
+        "verify",
+        "update",
+        "secure",
+        "invoice",
+        "payment",
+        "reset",
+        "signin",
+        "auth",
+        "confirm",
+    ]
+
+    DANGEROUS_URL_EXTENSIONS = [
+        ".exe",
+        ".zip",
+        ".scr",
+        ".js",
+        ".bat",
+        ".docm",
+        ".xlsm",
+        ".rar",
+    ]
+
+    URL_SHORTENERS = [
+        "bit.ly",
+        "tinyurl.com",
+        "t.co",
+        "goo.gl",
+        "rb.gy",
+    ]
+
     def __init__(self):
         """Initialize scorer"""
         logger.info("MaliciousScorer initialized")
@@ -54,17 +91,12 @@ class MaliciousScorer:
     def calculate_score(self, indicators: Dict, email_text: str = "") -> Dict:
         """
         Calculate maliciousness score based on indicators
-
-        WHY: Converts technical findings into risk assessment
-
-        Args:
-            indicators (dict): Extracted indicators from file
-
-        Returns:
-            dict: Score, severity, and explanation
         """
         score = 0.0
         reasons = []
+
+        port_urls = 0
+        phishing_hits = 0
 
         # Check for URLs
         url_count = len(indicators.get("urls", []))
@@ -72,7 +104,6 @@ class MaliciousScorer:
             score += self.WEIGHTS["url"]
             reasons.append(f"{url_count} URL(s) found")
 
-            # Check for suspicious TLDs
             suspicious_urls = self._check_suspicious_tlds(indicators.get("urls", []))
             if suspicious_urls > 0:
                 score += self.WEIGHTS["suspicious_tld"]
@@ -80,22 +111,48 @@ class MaliciousScorer:
                     f"{suspicious_urls} suspicious domain(s) (.tk, .ml, etc.)"
                 )
 
-            # Check for URLs with ports (often C2 servers)
             port_urls = self._check_urls_with_ports(indicators.get("urls", []))
             if port_urls > 0:
                 score += self.WEIGHTS["port_in_url"]
                 reasons.append(f"{port_urls} URL(s) with non-standard ports")
 
-            # Check for multiple URLs (common phishing tactic)
+            path_keyword_hits = self._check_url_path_keywords(
+                indicators.get("urls", [])
+            )
+            if path_keyword_hits > 0:
+                score += self.WEIGHTS["url_path_keyword"]
+                reasons.append(
+                    f"{path_keyword_hits} suspicious URL path keyword(s) found"
+                )
+
+            dangerous_ext_hits = self._check_dangerous_url_extensions(
+                indicators.get("urls", [])
+            )
+            if dangerous_ext_hits > 0:
+                score += self.WEIGHTS["dangerous_url_extension"]
+                reasons.append(
+                    f"{dangerous_ext_hits} dangerous file extension URL(s) found"
+                )
+
+            ip_url_hits = self._check_ip_based_urls(indicators.get("urls", []))
+            if ip_url_hits > 0:
+                score += self.WEIGHTS["ip_based_url"]
+                reasons.append(f"{ip_url_hits} IP-based URL(s) found")
+
+            shortener_hits = self._check_url_shorteners(indicators.get("urls", []))
+            if shortener_hits > 0:
+                score += self.WEIGHTS["url_shortener"]
+                reasons.append(f"{shortener_hits} shortened URL(s) found")
+
             if url_count >= 2:
-                score += self.WEIGHTS["multiple_urls"]
+                score += min(0.20, (url_count - 1) * self.WEIGHTS["extra_url"])
                 reasons.append(f"Multiple URLs found ({url_count})")
 
-            # Check for phishing language in email text
-            phishing_hits = self._check_phishing_keywords(email_text)
-            if phishing_hits > 0:
-                score += self.WEIGHTS["phishing_keyword"]
-                reasons.append(f"{phishing_hits} phishing keyword(s) found")
+        # Check for phishing language in email/body text
+        phishing_hits = self._check_phishing_keywords(email_text)
+        if phishing_hits > 0:
+            score += min(0.25, phishing_hits * self.WEIGHTS["phishing_keyword"])
+            reasons.append(f"{phishing_hits} phishing keyword(s) found")
 
         # Check for IP addresses
         ip_count = len(indicators.get("ip_addresses", []))
@@ -109,7 +166,7 @@ class MaliciousScorer:
             score += self.WEIGHTS["email"]
             reasons.append(f"{email_count} email address(es) found")
 
-        # Check for cryptocurrency addresses (MAJOR RED FLAG for ransomware)
+        # Check for cryptocurrency addresses
         crypto_count = len(indicators.get("crypto_addresses", []))
         if crypto_count > 0:
             score += self.WEIGHTS["crypto_address"]
@@ -117,22 +174,44 @@ class MaliciousScorer:
                 f"{crypto_count} cryptocurrency address(es) found (ransomware indicator!)"
             )
 
-        # Check for file hashes
-        hash_count = len(indicators.get("file_hashes", []))
-        if hash_count > 0:
-            score += self.WEIGHTS["file_hash"]
-            reasons.append(f"{hash_count} file hash(es) found")
-
-        # Check for multiple indicators (highly suspicious)
+        # Check for multiple indicators
         total_indicators = indicators.get("total_count", 0)
         if total_indicators >= 5:
             score += self.WEIGHTS["multiple_indicators"]
             reasons.append(f"High indicator count ({total_indicators} total)")
 
+        # Combo bonus
+        categories = 0
+        if url_count > 0:
+            categories += 1
+        if ip_count > 0:
+            categories += 1
+        if email_count > 0:
+            categories += 1
+        if crypto_count > 0:
+            categories += 1
+        if phishing_hits > 0:
+            categories += 1
+
+        if categories >= 3:
+            score += self.WEIGHTS["combo_bonus"]
+            reasons.append("Multiple suspicious indicator types detected")
+
+        if url_count > 0 and email_count > 0:
+            score += 0.15
+            reasons.append("URL combined with email address")
+
+        if url_count > 0 and port_urls > 0:
+            score += 0.15
+            reasons.append("URL uses suspicious network port")
+
+        if url_count > 0 and phishing_hits > 0:
+            score += 0.10
+            reasons.append("Phishing language combined with URL")
+
         # Cap score at 1.0
         score = min(score, 1.0)
 
-        # Determine severity level
         severity = self._calculate_severity(score)
 
         result = {
@@ -146,17 +225,6 @@ class MaliciousScorer:
         return result
 
     def _check_suspicious_tlds(self, urls: List[str]) -> int:
-        """
-        Check for suspicious top-level domains
-
-        WHY: Free domains like .tk are heavily used by attackers
-
-        Args:
-            urls (list): List of URLs
-
-        Returns:
-            int: Count of suspicious URLs
-        """
         count = 0
         for url in urls:
             url_lower = url.lower()
@@ -165,81 +233,73 @@ class MaliciousScorer:
         return count
 
     def _check_urls_with_ports(self, urls: List[str]) -> int:
-        """
-        Check for URLs with non-standard ports
-
-        WHY: C2 servers often use custom ports like :8080, :4444
-
-        Args:
-            urls (list): List of URLs
-
-        Returns:
-            int: Count of URLs with ports
-        """
         count = 0
         for url in urls:
-            # Look for :NNNN pattern (but not :80 or :443 which are standard)
-            if ":" in url.split("//")[1] if "//" in url else url:
-                # Extract port
-                try:
-                    port_part = url.split("//")[1].split(":")[1].split("/")[0]
+            try:
+                target = url.split("//")[1] if "//" in url else url
+                if ":" in target:
+                    port_part = target.split(":")[1].split("/")[0]
                     port = int(port_part)
-                    if port not in [80, 443]:  # Non-standard ports
+                    if port not in [80, 443]:
                         count += 1
-                except (IndexError, ValueError):
-                    pass
+            except (IndexError, ValueError):
+                pass
         return count
 
     def _check_phishing_keywords(self, text: str) -> int:
-        """
-        Check email/body text for phishing-style language.
-        """
         if not text:
             return 0
 
         text_lower = text.lower()
         count = 0
-
         for keyword in self.PHISHING_KEYWORDS:
             if keyword in text_lower:
                 count += 1
+        return count
 
+    def _check_url_path_keywords(self, urls: List[str]) -> int:
+        count = 0
+        for url in urls:
+            url_lower = url.lower()
+            if any(keyword in url_lower for keyword in self.URL_PATH_KEYWORDS):
+                count += 1
+        return count
+
+    def _check_dangerous_url_extensions(self, urls: List[str]) -> int:
+        count = 0
+        for url in urls:
+            url_lower = url.lower()
+            if any(ext in url_lower for ext in self.DANGEROUS_URL_EXTENSIONS):
+                count += 1
+        return count
+
+    def _check_ip_based_urls(self, urls: List[str]) -> int:
+        count = 0
+        ip_pattern = re.compile(r"https?://(?:\d{1,3}\.){3}\d{1,3}")
+        for url in urls:
+            if ip_pattern.search(url):
+                count += 1
+        return count
+
+    def _check_url_shorteners(self, urls: List[str]) -> int:
+        count = 0
+        for url in urls:
+            url_lower = url.lower()
+            if any(shortener in url_lower for shortener in self.URL_SHORTENERS):
+                count += 1
         return count
 
     def _calculate_severity(self, score: float) -> str:
-        """
-        Convert numeric score to severity level
-
-        WHY: Users understand "High Risk" better than "0.75"
-
-        Args:
-            score (float): Maliciousness score (0.0-1.0)
-
-        Returns:
-            str: Severity level
-        """
-        if score >= 0.7:
-            return "High Severity - Likely Malicious"
-        elif score >= 0.4:
-            return "Moderate Severity - Suspicious"
-        elif score >= 0.2:
-            return "Low Severity - Potentially Risky"
+        if score >= 0.65:
+            return "High Severity"
+        elif score >= 0.40:
+            return "Moderate Severity"
+        elif score >= 0.20:
+            return "Low Severity"
         else:
-            return "Minimal Severity - Likely Safe"
+            return "Minimal Severity"
 
     def generate_explanation(self, score_result: Dict, indicators: Dict) -> str:
-        """
-        Generate human-readable explanation of score
-
-        WHY: Users need to understand WHY something is dangerous
-
-        Args:
-            score_result (dict): Scoring result
-            indicators (dict): Found indicators
-
-        Returns:
-            str: Detailed explanation
-        """
         explanation = f"Maliciousness Score: {score_result['score']}/1.0\n"
         explanation += f"Severity: {score_result['severity']}\n\n"
 

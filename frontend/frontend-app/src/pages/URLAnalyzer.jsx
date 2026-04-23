@@ -48,7 +48,30 @@ export default function URLAnalyzer() {
     setPageState('processing')
     try {
       const response = await scanURL(url)
-      navigate('/results', { state: response.data })
+      const data = response.data
+
+      navigate('/results', {
+        state: {
+          filename: data.filename || 'URL Analysis',
+          meta: `${data.indicators?.total_count || 0} indicator${(data.indicators?.total_count || 0) === 1 ? '' : 's'} · Submitted via URL`,
+          score: Math.round((data.score || 0) * 100),
+          fileType: data.file_type || 'Unknown',
+          fileSize: data.file_size || 'Unknown',
+          md5: data.md5 || '—',
+          sha256: data.sha256 || '—',
+          scanTime: `${data.analysis_time_seconds || 0}s`,
+          scanned: new Date().toLocaleString(),
+
+          indicators: data.indicators,
+          rawIndicators: data.indicators,
+
+          reasons: data.reasons || [],
+          suspicious_indicators: data.reasons || [],
+
+          severity: data.severity,
+          explanation: data.explanation,
+        }
+      })
     } catch (err) {
       setPageState('error')
     }
@@ -77,11 +100,11 @@ export default function URLAnalyzer() {
             <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${teal}20`, border: `1px solid ${teal}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🔗</div>
             <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: teal, letterSpacing: '0.12em', fontWeight: '600' }}>URL ANALYSIS</span>
           </div>
-          
+
           <h1 style={{ fontFamily: 'Space Mono', fontSize: '42px', fontWeight: '700', color: text, lineHeight: '1.2', marginBottom: '16px', letterSpacing: '-0.01em' }}>
             Analyze Suspicious URLs
           </h1>
-          
+
           <p style={{ fontFamily: 'DM Sans', fontSize: '16px', color: textMuted, lineHeight: '1.7', maxWidth: '600px', margin: '0 auto' }}>
             Paste a link to a remote file or webpage. We fetch and analyze it inside a fully isolated sandbox — nothing ever touches your machine.
           </p>
