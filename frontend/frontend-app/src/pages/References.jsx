@@ -4,7 +4,7 @@ import Footer from '../components/Footer'
 
 const team = [
   { name: 'Karrington Hall', role: 'Project Lead · Backend · AWS/Deployment', github: 'Karri53' },
-  { name: 'Kendall Brown', role: 'Frontend · UI/UX Development', github: null },
+  { name: 'Kendall Brown', role: 'Frontend · UI/UX Development', github: 'kbrownpv' },
   { name: 'LeMikkos Starks', role: 'QA/Testing · Regex Pattern Matching', github: 'lstarks1513' },
   { name: 'Brandon Nobles', role: 'Backend · Security Validation', github: 'BRegardQ' },
 ]
