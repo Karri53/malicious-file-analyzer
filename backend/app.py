@@ -56,11 +56,11 @@ if USE_PRODUCTION:
     except Exception as e:
         print(f"\n⚠️  Production Snowflake failed: {e}")
         print("⚠️  Falling back to MockSnowflakeClient")
-        db = MockSnowflakeClient()
+        db = get_snowflake_client()
 else:
     print("\nℹ️  Using MockSnowflakeClient")
     print("   (Set USE_REAL_SNOWFLAKE=true in .env for production)\n")
-    db = MockSnowflakeClient()
+    db = get_snowflake_client()
 
 
 # ============================================================================
@@ -199,6 +199,11 @@ def analyze_upload():
         if indicator_list:
             db.insert_indicators(scan_id, indicator_list)
             logger.info(f"Stored {len(indicator_list)} indicators")
+
+        # Store reasons for future retrieval
+        if score_result.get("reasons"):
+            db.insert_reasons(scan_id, score_result["reasons"])
+            logger.info(f"Stored {len(score_result['reasons'])} reasons")
 
         # Step 5: Clean up temp file
         os.remove(temp_path)
@@ -371,6 +376,11 @@ def analyze_url():
         if indicator_list:
             db.insert_indicators(scan_id, indicator_list)
             logger.info(f"Stored {len(indicator_list)} indicators")
+
+        # Store reasons for future retrieval
+        if score_result.get("reasons"):
+            db.insert_reasons(scan_id, score_result["reasons"])
+            logger.info(f"Stored {len(score_result['reasons'])} reasons")
 
         # Step 6: Clean up downloaded file  ← Next section should be this!
         downloader.cleanup_file(file_path)
@@ -650,7 +660,10 @@ def get_scan_result(scan_id):
         # Get associated indicators
         indicators = db.get_indicators_for_scan(scan_id)
 
-        return jsonify({"success": True, "scan": scan, "indicators": indicators}), 200
+        # Get associated reasons
+        reasons = db.get_reasons_for_scan(scan_id)
+
+        return jsonify({"success": True, "scan": scan, "indicators": indicators, "reasons": reasons}), 200
 
     except Exception as e:
         logger.error(f"Failed to retrieve scan {scan_id}: {str(e)}")

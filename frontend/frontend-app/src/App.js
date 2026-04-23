@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import URLAnalyzer from './pages/URLAnalyzer'
 import FileUpload from './pages/FileUpload'
 import Results from './pages/Results'
+import References from './pages/References'
 import { ThemeProvider } from './utils/ThemeContext'
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
           <Route path="/url" element={<URLAnalyzer />} />
           <Route path="/upload" element={<FileUpload />} />
           <Route path="/results" element={<Results />} />
+          <Route path="/references" element={<References />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

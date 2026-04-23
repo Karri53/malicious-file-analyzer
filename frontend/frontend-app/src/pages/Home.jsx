@@ -77,23 +77,85 @@ export default function Home() {
     fetchRecent()
   }, [])
 
-  // Color palette from new NEXUS logo: sage green + gold + charcoal
   const bg        = isDark ? '#161E1A' : '#F7F5F0'
   const surface   = isDark ? '#1E2A24' : '#FFFFFF'
   const surface2  = isDark ? '#243028' : '#F4F2EC'
   const border    = isDark ? '#2E3D38' : '#DDE3DC'
   const borderDim = isDark ? '#263028' : '#EAE8E0'
-  const text      = isDark ? '#F0EDE4' : '#1C2B26'      // High contrast
-  const textBody  = isDark ? '#C8D4CC' : '#2E3D35'      // Body — still readable
+  const text      = isDark ? '#F0EDE4' : '#1C2B26'
+  const textBody  = isDark ? '#C8D4CC' : '#2E3D35'
   const textMuted = isDark ? '#8A9E94' : '#5A6B60'
   const textFaint = isDark ? '#5A6E64' : '#8B9E94'
-  const gold      = isDark ? '#C9A84C' : '#8B6914'      // Gold from logo
+  const gold      = isDark ? '#C9A84C' : '#8B6914'
   const goldLight = isDark ? '#E0C87A' : '#B89840'
-  const sage      = isDark ? '#6FBF88' : '#4A7A5C'      // Sage green from logo
+  const sage      = isDark ? '#6FBF88' : '#4A7A5C'
   const rowHover  = isDark ? '#243028' : '#F4F2EC'
 
-  const handleRowClick = (scan) => {
+    const handleRowClick = async (scan) => {
     const score = Math.round((scan.malicious_score || 0) * 100)
+
+    if (scan.scan_id) {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/results/${scan.scan_id}`)
+        const data = res.data
+        const fullScan = data.scan || {}
+        const indicatorList = data.indicators || []
+        const reasons = data.reasons || []
+
+        const indicators = {}
+        indicatorList.forEach(ind => {
+          const type = ind.indicator_type
+          if (!indicators[type]) indicators[type] = []
+          const val = ind.indicator_value
+          indicators[type].push(typeof val === 'object' ? val.value || JSON.stringify(val) : val)
+        })
+
+        // Build reason strings that match what explainReason understands
+        const reasonMap = {
+          'urls': '1 URL(s) found',
+          'emails': '1 email address found',
+          'ip_addresses': '1 IP address found',
+          'crypto_addresses': '1 cryptocurrency address found',
+          'suspicious_domains': '1 suspicious domain(s) (.tk, .ml, etc.)',
+          'phishing_keywords': '1 phishing keyword found',
+          'shortened_urls': '1 shortened URL found',
+          'dangerous_extensions': '1 dangerous file extension URL(s) found',
+          'non_standard_ports': '1 URL(s) with non-standard ports found',
+          'ip_based_urls': '1 IP-based URL found',
+        }
+
+        const mappedReasons = indicatorList
+          .map(ind => reasonMap[ind.indicator_type] || null)
+          .filter(Boolean)
+
+        // Deduplicate reasons
+        const uniqueReasons = [...new Set(mappedReasons)]
+        const finalReasons = reasons.length > 0 ? reasons : uniqueReasons
+
+        navigate('/results', {
+          state: {
+            filename: fullScan.filename || scan.filename,
+            meta: `${formatBytes(fullScan.file_size_bytes || scan.file_size_bytes)} · ${fullScan.file_type || scan.file_type || 'Unknown'} · ${scan.source_method || 'Upload'}`,
+            score: Math.round((fullScan.malicious_score || 0) * 100),
+            file_type: fullScan.file_type || scan.file_type,
+            file_size: formatBytes(fullScan.file_size_bytes || scan.file_size_bytes),
+            md5: fullScan.md5 || '—',
+            sha256: fullScan.sha256 || '—',
+            scan_time: fullScan.analysis_duration_seconds ? `${fullScan.analysis_duration_seconds.toFixed(2)}s` : '—',
+            scanned: scan.upload_timestamp && scan.upload_timestamp !== 'mock_timestamp'
+              ? new Date(scan.upload_timestamp).toLocaleString() : '—',
+            indicators,
+            reasons: finalReasons,
+            suspicious_indicators: finalReasons, // For backward compatibility with explainReason function
+          },
+        })
+        return
+      } catch (err) {
+        console.error('Failed to fetch full scan:', err)
+      }
+    }
+
+    // Fallback
     navigate('/results', {
       state: {
         filename: scan.filename,
@@ -105,6 +167,8 @@ export default function Home() {
         scanned: scan.upload_timestamp && scan.upload_timestamp !== 'mock_timestamp'
           ? new Date(scan.upload_timestamp).toLocaleString() : '—',
         indicators: {},
+        reasons: [],
+        suspicious_indicators: [],
       },
     })
   }
@@ -116,37 +180,27 @@ export default function Home() {
         {/* ── HERO ── */}
         <div style={{ textAlign: 'center', maxWidth: '760px', margin: '0 auto 72px' }}>
 
-          {/* Status badge */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: isDark ? 'rgba(111,191,136,0.12)' : 'rgba(74,122,92,0.1)', border: `1px solid ${sage}50`, borderRadius: '100px', padding: '6px 18px', marginBottom: '28px' }}>
             <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: sage, boxShadow: `0 0 8px ${sage}` }} />
             <span style={{ fontFamily: 'DM Sans', fontSize: '13px', fontWeight: '600', color: sage, letterSpacing: '0.04em' }}>SYSTEM OPERATIONAL</span>
           </div>
 
-          {/* Logo */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-            <img
-              src="/NexusLogo.png"
-              alt="NEXUS"
-              style={{ height: '100px', width: 'auto', objectFit: 'contain' }}
-            />
+            <img src="/NexusLogo.png" alt="NEXUS" style={{ height: '100px', width: 'auto', objectFit: 'contain' }} />
           </div>
 
-          {/* Title */}
           <h1 style={{ fontFamily: 'Space Mono', fontSize: '52px', fontWeight: '700', color: text, lineHeight: '1.0', marginBottom: '12px', letterSpacing: '0.04em' }}>
             NEXUS
           </h1>
 
-          {/* Gold tagline */}
           <p style={{ fontFamily: 'DM Sans', fontSize: '18px', fontWeight: '600', color: gold, marginBottom: '16px', letterSpacing: '0.02em' }}>
             Advanced Static Analysis & Threat Intelligence
           </p>
 
-          {/* Description — large enough for older users */}
           <p style={{ fontFamily: 'DM Sans', fontSize: '16px', color: textBody, lineHeight: '1.75', maxWidth: '580px', margin: '0 auto 36px' }}>
             Enterprise-grade malware detection powered by multi-engine scanning, static analysis, and behavioral threat intelligence.
           </p>
 
-          {/* Primary CTA */}
           <button
             onClick={() => navigate('/upload')}
             aria-label="Start file analysis"
@@ -157,8 +211,7 @@ export default function Home() {
               border: 'none', borderRadius: '10px',
               padding: '14px 36px', cursor: 'pointer',
               boxShadow: `0 4px 16px ${sage}40`,
-              transition: 'all 0.2s',
-              letterSpacing: '0.02em',
+              transition: 'all 0.2s', letterSpacing: '0.02em',
             }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 8px 24px ${sage}50` }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 16px ${sage}40` }}
@@ -202,14 +255,9 @@ export default function Home() {
                 tabIndex={0}
                 aria-label={`Start ${type.title}`}
                 style={{
-                  background: surface,
-                  border: `2px solid ${border}`,
-                  borderRadius: '16px',
-                  padding: '36px',
-                  cursor: 'pointer',
-                  transition: 'all 0.25s',
-                  display: 'flex',
-                  flexDirection: 'column',
+                  background: surface, border: `2px solid ${border}`,
+                  borderRadius: '16px', padding: '36px',
+                  cursor: 'pointer', transition: 'all 0.25s', display: 'flex', flexDirection: 'column',
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.transform = 'translateY(-6px)'
@@ -228,9 +276,7 @@ export default function Home() {
                 </div>
                 <h3 style={{ fontFamily: 'Space Mono', fontSize: '18px', fontWeight: '700', color: text, marginBottom: '12px' }}>{type.title}</h3>
                 <p style={{ fontFamily: 'DM Sans', fontSize: '15px', color: textBody, lineHeight: '1.65', marginBottom: '24px', flex: 1 }}>{type.desc}</p>
-                <div style={{ fontFamily: 'DM Sans', fontSize: '15px', fontWeight: '600', color: type.accent }}>
-                  {type.cta} →
-                </div>
+                <div style={{ fontFamily: 'DM Sans', fontSize: '15px', fontWeight: '600', color: type.accent }}>{type.cta} →</div>
               </div>
             ))}
           </div>
@@ -243,7 +289,6 @@ export default function Home() {
           </h2>
 
           <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: '16px', overflow: 'hidden' }}>
-            {/* Header */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 80px 100px 1.5fr 110px 80px', gap: '16px', padding: '14px 24px', background: surface2, borderBottom: `1px solid ${border}` }}>
               {['FILE NAME', 'TYPE', 'SCORE', 'SEVERITY', 'STATUS', 'SIZE'].map((h, i) => (
                 <span key={h} style={{ fontFamily: 'DM Sans', fontSize: '12px', fontWeight: '700', color: textFaint, letterSpacing: '0.08em', textAlign: i >= 2 ? 'center' : 'left' }}>{h}</span>
@@ -276,8 +321,7 @@ export default function Home() {
                     display: 'grid', gridTemplateColumns: '2fr 80px 100px 1.5fr 110px 80px',
                     gap: '16px', padding: '16px 24px',
                     borderBottom: i < recentScans.length - 1 ? `1px solid ${borderDim}` : 'none',
-                    cursor: 'pointer', transition: 'background 0.15s', alignItems: 'center',
-                    outline: 'none',
+                    cursor: 'pointer', transition: 'background 0.15s', alignItems: 'center', outline: 'none',
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = rowHover}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}

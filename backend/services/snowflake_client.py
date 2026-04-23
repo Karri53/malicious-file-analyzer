@@ -76,6 +76,18 @@ class MockSnowflakeClient:
         logger.info(f"[MOCK] Inserted {len(metadata)} metadata entries for scan {scan_id}")
         return len(metadata)
     
+    def insert_reasons(self, scan_id: str, reasons: list) -> int:
+        """Mock insert reasons."""
+        if scan_id not in self.metadata:
+            self.metadata[scan_id] = {}
+        self.metadata[scan_id]['reasons'] = reasons
+        logger.info(f"[MOCK] Stored {len(reasons)} reasons for scan {scan_id}")
+        return len(reasons)
+
+    def get_reasons_for_scan(self, scan_id: str) -> list:
+        """Mock get reasons for scan."""
+        return self.metadata.get(scan_id, {}).get('reasons', [])
+    
     def get_scan_by_id(self, scan_id: str) -> dict:
         """Mock get scan by ID."""
         return self.scans.get(scan_id)
