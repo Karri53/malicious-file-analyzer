@@ -13,6 +13,8 @@ const advisors = [
   { name: 'Dr. Nourshin Ghaffari', role: 'Faculty Advisor', org: 'Prairie View A&M University' },
   { name: 'Dr. Gregory Stevenson', role: 'NSA Mentor', org: 'National Security Agency' },
   { name: 'Mr. Andrew Hutton', role: 'NSA Mentor', org: 'National Security Agency' },
+  { name: 'Mr. Jonathan Martindale', role: 'Snowflake Liaison', org: 'Snowflake Inc.' },
+  { name: 'Ms. Tanya Hollins', role: 'Amazon Liaison', org: 'Amazon Web Services' },
 ]
 
 export default function References() {
@@ -51,7 +53,7 @@ export default function References() {
             About NEXUS
           </h1>
           <p style={{ fontFamily: 'DM Sans', fontSize: '16px', color: textMuted, maxWidth: '640px', lineHeight: '1.7' }}>
-            NEXUS is a senior design capstone project developed at Prairie View A&M University in partnership with the National Security Agency (NSA) GenCyber program. It provides automated malware analysis for educational and research purposes.
+            NEXUS is a senior design capstone project developed at Prairie View A&M University in partnership with the National Security Agency. It provides automated malware analysis for educational and research purposes.
           </p>
         </div>
 
@@ -107,7 +109,7 @@ export default function References() {
               </div>
               {[
                 { name: 'Prairie View A&M University', detail: 'COMP 4208 P02 · Senior Design II · Spring 2026' },
-                { name: 'National Security Agency', detail: 'NSA GenCyber Partnership Program' },
+                { name: 'National Security Agency', detail: 'NSA Partnership Program' },
               ].map((inst, i, arr) => (
                 <div key={i} style={{ padding: '10px 0', borderBottom: i < arr.length - 1 ? `1px solid ${borderDim}` : 'none' }}>
                   <div style={{ fontFamily: 'DM Sans', fontSize: '14px', fontWeight: '600', color: text, marginBottom: '2px' }}>{inst.name}</div>

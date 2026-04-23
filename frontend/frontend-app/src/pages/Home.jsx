@@ -274,8 +274,8 @@ export default function Home() {
                 <div style={{ width: '64px', height: '64px', borderRadius: '14px', background: type.accentLight, border: `1px solid ${type.accent}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', marginBottom: '20px' }}>
                   {type.icon}
                 </div>
-                <h3 style={{ fontFamily: 'Space Mono', fontSize: '18px', fontWeight: '700', color: text, marginBottom: '12px' }}>{type.title}</h3>
-                <p style={{ fontFamily: 'DM Sans', fontSize: '15px', color: textBody, lineHeight: '1.65', marginBottom: '24px', flex: 1 }}>{type.desc}</p>
+                <h3 style={{ fontFamily: 'Space Mono', fontSize: '20px', fontWeight: '700', color: text, marginBottom: '12px' }}>{type.title}</h3>
+                <p style={{ fontFamily: 'DM Sans', fontSize: '18px', color: isDark? '#D4E4D8' : '#1C2B26', lineHeight: '1.65', marginBottom: '24px', flex: 1 }}>{type.desc}</p>
                 <div style={{ fontFamily: 'DM Sans', fontSize: '15px', fontWeight: '600', color: type.accent }}>{type.cta} →</div>
               </div>
             ))}
