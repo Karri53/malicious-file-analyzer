@@ -159,7 +159,7 @@ export default function References() {
             <div style={{ flex: 1, height: '1px', background: border }} />
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            {['React', 'Flask', 'Python', 'AWS', 'Snowflake', 'YARA Rules', 'Tesseract OCR', 'VirusTotal API', 'Regex Pattern Matching'].map(tech => (
+            {['React', 'Flask', 'Python', 'AWS', 'Snowflake', 'YARA Rules', 'Tesseract OCR', 'Regex Pattern Matching'].map(tech => (
               <span key={tech} style={{ fontFamily: 'DM Sans', fontSize: '13px', fontWeight: '500', color: textMuted, background: surface2, border: `1px solid ${border}`, borderRadius: '6px', padding: '6px 14px' }}>
                 {tech}
               </span>
