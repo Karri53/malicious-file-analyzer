@@ -26,8 +26,8 @@ function getStatus(score) {
 
 function getBadgeStyle(status, isDark) {
   if (status === 'MALICIOUS') return { color: isDark ? '#E89090' : '#C96B6B', background: isDark ? 'rgba(232,144,144,0.2)' : 'rgba(201,107,107,0.12)', border: '1px solid rgba(201,107,107,0.35)' }
-  if (status === 'WARNING')   return { color: isDark ? '#F0B76F' : '#D49A4A', background: isDark ? 'rgba(240,183,111,0.2)' : 'rgba(212,154,74,0.12)',  border: '1px solid rgba(212,154,74,0.35)'  }
-  return                             { color: isDark ? '#6FBF88' : '#5C9A73', background: isDark ? 'rgba(111,191,136,0.2)' : 'rgba(92,154,115,0.12)',  border: '1px solid rgba(92,154,115,0.35)'  }
+  if (status === 'WARNING') return { color: isDark ? '#F0B76F' : '#D49A4A', background: isDark ? 'rgba(240,183,111,0.2)' : 'rgba(212,154,74,0.12)', border: '1px solid rgba(212,154,74,0.35)' }
+  return { color: isDark ? '#6FBF88' : '#5C9A73', background: isDark ? 'rgba(111,191,136,0.2)' : 'rgba(92,154,115,0.12)', border: '1px solid rgba(92,154,115,0.35)' }
 }
 
 function formatBytes(bytes) {
@@ -45,20 +45,20 @@ export default function URLAnalyzer() {
   const navigate = useNavigate()
   const { isDark } = useTheme()
 
-  const bg       = isDark ? '#1A2520' : '#F5F5F0'
-  const surface  = isDark ? '#243530' : '#FFFFFF'
+  const bg = isDark ? '#1A2520' : '#F5F5F0'
+  const surface = isDark ? '#243530' : '#FFFFFF'
   const surface2 = isDark ? '#2C3E38' : '#FAFAF8'
-  const border   = isDark ? '#3A4A42' : '#D4D9CE'
+  const border = isDark ? '#3A4A42' : '#D4D9CE'
   const borderDim = isDark ? '#323E39' : '#E0DBCE'
-  const text     = isDark ? '#E8EDE9' : '#2C3E35'
+  const text = isDark ? '#E8EDE9' : '#2C3E35'
   const textMuted = isDark ? '#9FACA3' : '#5A6B5C'
   const textFaint = isDark ? '#6B7B70' : '#8B9C8D'
-  const inputBg  = isDark ? '#2C3E38' : '#FAFAF8'
+  const inputBg = isDark ? '#2C3E38' : '#FAFAF8'
   const inputText = isDark ? '#E8EDE9' : '#2C3E35'
-  const primary  = isDark ? '#6FBF88' : '#5C9A73'
-  const warning  = isDark ? '#F0B76F' : '#D49A4A'
-  const danger   = isDark ? '#E89090' : '#C96B6B'
-  const success  = isDark ? '#6FBF88' : '#5C9A73'
+  const primary = isDark ? '#6FBF88' : '#5C9A73'
+  const warning = isDark ? '#F0B76F' : '#D49A4A'
+  const danger = isDark ? '#E89090' : '#C96B6B'
+  const success = isDark ? '#6FBF88' : '#5C9A73'
   const rowHover = isDark ? '#2C3E38' : '#F0EDE6'
 
   useEffect(() => {
@@ -78,10 +78,14 @@ export default function URLAnalyzer() {
 
   const handleScan = async () => {
     if (!url.trim()) return
-    if (!url.startsWith('http')) { setPageState('error'); return }
+    let submittedUrl = url.trim()
+
+    if (!submittedUrl.startsWith('http://') && !submittedUrl.startsWith('https://')) {
+      submittedUrl = `https://${submittedUrl}`
+    }
     setPageState('processing')
     try {
-      const response = await scanURL(url)
+      const response = await scanURL(submittedUrl)
       const data = response.data
       navigate('/results', {
         state: {
@@ -186,7 +190,7 @@ export default function URLAnalyzer() {
             Analyze Suspicious URLs
           </h1>
           <p style={{ fontFamily: 'DM Sans', fontSize: '16px', color: textMuted, lineHeight: '1.7', maxWidth: '600px', margin: '0 auto' }}>
-            Paste a link to a remote file or webpage. We fetch and analyze it inside a fully isolated sandbox — nothing ever touches your machine.
+            Paste a link to a remote file or webpage. We securely fetch and analyze reachable content on the server side — nothing is downloaded to your device.
           </p>
         </div>
 
@@ -252,7 +256,7 @@ export default function URLAnalyzer() {
                   <div style={{ fontFamily: 'DM Sans', fontSize: '13px', color: textMuted, lineHeight: '1.6' }}>We couldn't fetch this URL in our sandbox. The server may be down, the URL is malformed, or access is restricted.</div>
                 </div>
                 {[
-                  ['Check the URL format.', ' Make sure it starts with http:// or https://'],
+                  ['Check the URL.', ' Make sure the site is reachable.'],
                   ['Try File Upload instead.', ' If you have the file locally, upload it directly.'],
                   ['The site may be down.', ' Try again in a few minutes.'],
                 ].map(([bold, rest], i) => (

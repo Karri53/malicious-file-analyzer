@@ -88,12 +88,15 @@ class MaliciousScorer:
         """Initialize scorer"""
         logger.info("MaliciousScorer initialized")
 
-    def calculate_score(self, indicators: Dict, email_text: str = "") -> Dict:
+    def calculate_score(
+        self, indicators: Dict, email_text: str = "", file_type: str = ""
+    ) -> Dict:
         """
         Calculate maliciousness score based on indicators
         """
         score = 0.0
         reasons = []
+        is_email_file = file_type == ".eml"
 
         port_urls = 0
         phishing_hits = 0
@@ -101,7 +104,7 @@ class MaliciousScorer:
         # Check for URLs
         url_count = len(indicators.get("urls", []))
         if url_count > 0:
-            score += self.WEIGHTS["url"]
+            score += 0.03 if is_email_file else self.WEIGHTS["url"]
             reasons.append(f"{url_count} URL(s) found")
 
             suspicious_urls = self._check_suspicious_tlds(indicators.get("urls", []))
@@ -145,7 +148,10 @@ class MaliciousScorer:
                 reasons.append(f"{shortener_hits} shortened URL(s) found")
 
             if url_count >= 2:
-                score += min(0.20, (url_count - 1) * self.WEIGHTS["extra_url"])
+                extra_weight = 0.01 if is_email_file else self.WEIGHTS["extra_url"]
+                score += min(
+                    0.08 if is_email_file else 0.20, (url_count - 1) * extra_weight
+                )
                 reasons.append(f"Multiple URLs found ({url_count})")
 
         # Check for phishing language in email/body text
@@ -163,7 +169,7 @@ class MaliciousScorer:
         # Check for email addresses
         email_count = len(indicators.get("emails", []))
         if email_count > 0:
-            score += self.WEIGHTS["email"]
+            score += 0.02 if is_email_file else self.WEIGHTS["email"]
             reasons.append(f"{email_count} email address(es) found")
 
         # Check for cryptocurrency addresses
@@ -176,7 +182,7 @@ class MaliciousScorer:
 
         # Check for multiple indicators
         total_indicators = indicators.get("total_count", 0)
-        if total_indicators >= 5:
+        if total_indicators >= (30 if is_email_file else 5):
             score += self.WEIGHTS["multiple_indicators"]
             reasons.append(f"High indicator count ({total_indicators} total)")
 
@@ -193,20 +199,23 @@ class MaliciousScorer:
         if phishing_hits > 0:
             categories += 1
 
-        if categories >= 3:
+        if categories >= (4 if is_email_file else 3):
             score += self.WEIGHTS["combo_bonus"]
             reasons.append("Multiple suspicious indicator types detected")
 
-        if url_count > 0 and email_count > 0:
+        if not is_email_file and url_count > 0 and email_count > 0:
             score += 0.15
             reasons.append("URL combined with email address")
+        elif is_email_file and url_count > 0 and email_count > 0 and phishing_hits > 0:
+            score += 0.05
+            reasons.append("Email contains links plus phishing language")
 
         if url_count > 0 and port_urls > 0:
             score += 0.15
             reasons.append("URL uses suspicious network port")
 
         if url_count > 0 and phishing_hits > 0:
-            score += 0.10
+            score += 0.04 if is_email_file else 0.10
             reasons.append("Phishing language combined with URL")
 
         # Cap score at 1.0

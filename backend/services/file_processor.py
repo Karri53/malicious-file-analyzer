@@ -9,6 +9,8 @@ import hashlib
 import logging
 from typing import Dict, Optional
 from datetime import datetime
+from email import policy
+from email.parser import BytesParser
 
 # Import file processing libraries
 try:
@@ -50,10 +52,19 @@ logger = logging.getLogger(__name__)
 class FileProcessor:
     """
     Processes files to extract text and metadata using static analysis.
-    Supports PDF, DOCX, PNG, JPG, TXT file types.
+    Supports PDF, DOCX, PNG, JPG, TXT, and EML file types.
     """
 
-    SUPPORTED_TYPES = [".pdf", ".docx", ".png", ".jpg", ".jpeg", ".webp", ".txt"]
+    SUPPORTED_TYPES = [
+        ".pdf",
+        ".docx",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".txt",
+        ".eml",
+    ]
     MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
     def __init__(self):
@@ -235,6 +246,57 @@ class FileProcessor:
             logger.error(f"OCR extraction failed: {e}")
             return ""
 
+    def extract_text_from_eml(self, file_path: str) -> str:
+        """
+        Extract text from .eml email files.
+
+        WHY: Email files may contain phishing links, suspicious senders,
+        malicious instructions, IP addresses, or social engineering text.
+        """
+        try:
+            with open(file_path, "rb") as f:
+                msg = BytesParser(policy=policy.default).parse(f)
+
+            extracted_parts = []
+
+            subject = msg.get("subject", "")
+            sender = msg.get("from", "")
+            recipient = msg.get("to", "")
+
+            extracted_parts.append(f"Subject: {subject}")
+            extracted_parts.append(f"From: {sender}")
+            extracted_parts.append(f"To: {recipient}")
+
+            if msg.is_multipart():
+                for part in msg.walk():
+                    content_type = part.get_content_type()
+                    disposition = part.get_content_disposition()
+
+                    if disposition == "attachment":
+                        continue
+
+                    if content_type in ["text/plain", "text/html"]:
+                        try:
+                            body = part.get_content()
+                            if body:
+                                extracted_parts.append(str(body))
+                        except Exception as e:
+                            logger.warning(f"Could not extract email part: {e}")
+            else:
+                body = msg.get_content()
+                if body:
+                    extracted_parts.append(str(body))
+
+            text = "\n\n".join(extracted_parts)
+
+            logger.info(f"Extracted {len(text)} characters from EML file")
+            logger.info(f"EML preview: {text[:500]}")
+            return text
+
+        except Exception as e:
+            logger.error(f"Error extracting EML text: {e}")
+            return ""
+
     def process_file(self, file_path: str) -> Dict:
         """
         Process file and extract all text/metadata
@@ -272,6 +334,8 @@ class FileProcessor:
         elif file_type == ".txt":
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 extracted_text = f.read()
+        elif file_type == ".eml":
+            extracted_text = self.extract_text_from_eml(file_path)
 
         result = {
             "success": True,

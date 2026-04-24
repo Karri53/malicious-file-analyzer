@@ -9,7 +9,7 @@ const analysisTypes = [
   {
     icon: '🔗',
     title: 'URL Analysis',
-    desc: 'Submit any URL for behavioral analysis and threat intelligence lookup in an isolated sandbox.',
+    desc: 'Submit a URL for reachable content inspection, structural checks, and static risk analysis.',
     cta: 'Analyze URL',
     path: '/url',
     accent: '#5C8A5C',
@@ -18,7 +18,7 @@ const analysisTypes = [
   {
     icon: '📁',
     title: 'File Upload',
-    desc: 'Upload files or .eml email files for static analysis, sandbox detonation, and multi-engine scanning.',
+    desc: 'Upload files or .eml emails for static analysis, OCR text extraction, metadata review, and indicator scanning.',
     cta: 'Upload File',
     path: '/upload',
     accent: '#5C8A5C',
@@ -27,9 +27,9 @@ const analysisTypes = [
 ]
 
 const howItWorksSteps = [
-  { num: '01', title: 'Submit', desc: 'Upload a file or .eml email, or paste a URL to our scanner.' },
-  { num: '02', title: 'Analyze', desc: 'Multi-engine scanning, static analysis, and behavioral detection.' },
-  { num: '03', title: 'Report', desc: 'Receive a full threat report with indicators of compromise.' },
+  { num: '01', title: 'Submit', desc: 'Upload a file or .eml email, or paste a URL for analysis.' },
+  { num: '02', title: 'Analyze', desc: 'Static analysis, regex detection, OCR extraction, and heuristic scoring.' },
+  { num: '03', title: 'Report', desc: 'Receive a detailed report with detected indicators and threat score.' },
 ]
 
 function getScoreColor(score, isDark) {
@@ -46,8 +46,8 @@ function getStatus(score) {
 
 function getBadgeStyle(status, isDark) {
   if (status === 'MALICIOUS') return { color: isDark ? '#E89090' : '#C96B6B', background: isDark ? 'rgba(232,144,144,0.2)' : 'rgba(201,107,107,0.12)', border: '1px solid rgba(201,107,107,0.35)' }
-  if (status === 'WARNING')   return { color: isDark ? '#F0B76F' : '#D49A4A', background: isDark ? 'rgba(240,183,111,0.2)' : 'rgba(212,154,74,0.12)',  border: '1px solid rgba(212,154,74,0.35)'  }
-  return                             { color: isDark ? '#6FBF88' : '#5C9A73', background: isDark ? 'rgba(111,191,136,0.2)' : 'rgba(92,154,115,0.12)',  border: '1px solid rgba(92,154,115,0.35)'  }
+  if (status === 'WARNING') return { color: isDark ? '#F0B76F' : '#D49A4A', background: isDark ? 'rgba(240,183,111,0.2)' : 'rgba(212,154,74,0.12)', border: '1px solid rgba(212,154,74,0.35)' }
+  return { color: isDark ? '#6FBF88' : '#5C9A73', background: isDark ? 'rgba(111,191,136,0.2)' : 'rgba(92,154,115,0.12)', border: '1px solid rgba(92,154,115,0.35)' }
 }
 
 function formatBytes(bytes) {
@@ -77,21 +77,21 @@ export default function Home() {
     fetchRecent()
   }, [])
 
-  const bg        = isDark ? '#161E1A' : '#F7F5F0'
-  const surface   = isDark ? '#1E2A24' : '#FFFFFF'
-  const surface2  = isDark ? '#243028' : '#F4F2EC'
-  const border    = isDark ? '#2E3D38' : '#DDE3DC'
+  const bg = isDark ? '#161E1A' : '#F7F5F0'
+  const surface = isDark ? '#1E2A24' : '#FFFFFF'
+  const surface2 = isDark ? '#243028' : '#F4F2EC'
+  const border = isDark ? '#2E3D38' : '#DDE3DC'
   const borderDim = isDark ? '#263028' : '#EAE8E0'
-  const text      = isDark ? '#F0EDE4' : '#1C2B26'
-  const textBody  = isDark ? '#C8D4CC' : '#2E3D35'
+  const text = isDark ? '#F0EDE4' : '#1C2B26'
+  const textBody = isDark ? '#C8D4CC' : '#2E3D35'
   const textMuted = isDark ? '#8A9E94' : '#5A6B60'
   const textFaint = isDark ? '#5A6E64' : '#8B9E94'
-  const gold      = isDark ? '#C9A84C' : '#8B6914'
+  const gold = isDark ? '#C9A84C' : '#8B6914'
   const goldLight = isDark ? '#E0C87A' : '#B89840'
-  const sage      = isDark ? '#6FBF88' : '#4A7A5C'
-  const rowHover  = isDark ? '#243028' : '#F4F2EC'
+  const sage = isDark ? '#6FBF88' : '#4A7A5C'
+  const rowHover = isDark ? '#243028' : '#F4F2EC'
 
-    const handleRowClick = async (scan) => {
+  const handleRowClick = async (scan) => {
     const score = Math.round((scan.malicious_score || 0) * 100)
 
     if (scan.scan_id) {
@@ -198,7 +198,7 @@ export default function Home() {
           </p>
 
           <p style={{ fontFamily: 'DM Sans', fontSize: '16px', color: textBody, lineHeight: '1.75', maxWidth: '580px', margin: '0 auto 36px' }}>
-            Enterprise-grade malware detection powered by multi-engine scanning, static analysis, and behavioral threat intelligence.
+            Advanced file and URL analysis powered by static detection, OCR extraction, metadata review, and indicator-based scoring.
           </p>
 
           <button
@@ -275,7 +275,7 @@ export default function Home() {
                   {type.icon}
                 </div>
                 <h3 style={{ fontFamily: 'Space Mono', fontSize: '20px', fontWeight: '700', color: text, marginBottom: '12px' }}>{type.title}</h3>
-                <p style={{ fontFamily: 'DM Sans', fontSize: '18px', color: isDark? '#D4E4D8' : '#1C2B26', lineHeight: '1.65', marginBottom: '24px', flex: 1 }}>{type.desc}</p>
+                <p style={{ fontFamily: 'DM Sans', fontSize: '18px', color: isDark ? '#D4E4D8' : '#1C2B26', lineHeight: '1.65', marginBottom: '24px', flex: 1 }}>{type.desc}</p>
                 <div style={{ fontFamily: 'DM Sans', fontSize: '15px', fontWeight: '600', color: type.accent }}>{type.cta} →</div>
               </div>
             ))}

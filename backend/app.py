@@ -161,7 +161,11 @@ def analyze_upload():
 
         # Step 3: Calculate malicious score
         scorer = MaliciousScorer()
-        score_result = scorer.calculate_score(indicators)
+        score_result = scorer.calculate_score(
+            indicators,
+            email_text=extracted_text,
+            file_type=file_data.get("file_type", ""),
+        )
 
         # Step 4: Store results in Snowflake
         # Prepare scan data
@@ -280,6 +284,11 @@ def analyze_url():
         )
 
     url = data["url"].strip()
+    # Auto-add scheme if user forgot http/https
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+
+    logger.info(f"Normalized URL for download: {url}")
 
     if not url:
         return jsonify({"success": False, "error": "URL cannot be empty"}), 400
@@ -330,7 +339,16 @@ def analyze_url():
 
         # Step 4: Calculate malicious score
         scorer = MaliciousScorer()
-        score_result = scorer.calculate_score(indicators, email_text=url)
+        score_result = scorer.calculate_score(indicators)
+
+        # Reduce plain URL-only noise for direct URL submissions
+        url_count = len(indicators.get("urls", []))
+        total_count = indicators.get("total_count", 0)
+
+        if url_count == 1 and total_count == 1:
+            score_result["score"] = 0.05
+            score_result["severity"] = "Minimal Severity"
+            score_result["reasons"] = ["Single normal URL detected"]
 
         # Step 5: Store results in Snowflake
         # Prepare scan data
@@ -663,7 +681,17 @@ def get_scan_result(scan_id):
         # Get associated reasons
         reasons = db.get_reasons_for_scan(scan_id)
 
-        return jsonify({"success": True, "scan": scan, "indicators": indicators, "reasons": reasons}), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "scan": scan,
+                    "indicators": indicators,
+                    "reasons": reasons,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Failed to retrieve scan {scan_id}: {str(e)}")

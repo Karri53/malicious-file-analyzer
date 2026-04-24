@@ -16,8 +16,8 @@ const limits = [
 const engines = [
   ['Static Analysis', 'ONLINE', '#5C9A73'],
   ['Regex Pattern Matching', 'ONLINE', '#5C9A73'],
-  ['Behavioral Analysis', 'ONLINE', '#5C9A73'],
-  ['YARA Rules Engine', 'ONLINE', '#5C9A73'],
+  ['Heuristic Analysis', 'ONLINE', '#5C9A73'],
+  ['Signature Rules Engine', 'ONLINE', '#5C9A73'],
   ['OCR Text Extraction', 'Beta', '#D49A4A'],
 ]
 
@@ -113,11 +113,11 @@ export default function FileUpload() {
           </div>
 
           <h1 style={{ fontFamily: 'Space Mono', fontSize: '42px', fontWeight: '700', color: text, lineHeight: '1.2', marginBottom: '16px', letterSpacing: '-0.01em' }}>
-            Upload Files for<br />Deep Analysis
+            Upload Files for<br />Static Analysis
           </h1>
 
           <p style={{ fontFamily: 'DM Sans', fontSize: '16px', color: textMuted, lineHeight: '1.7', maxWidth: '600px', margin: '0 auto 20px' }}>
-            Drop any suspicious file directly. We run static analysis, dynamic sandbox detonation, and multi-engine scanning — without it ever touching your machine.
+            Drop a suspicious file directly. NEXUS performs static analysis, OCR extraction, metadata review, and indicator-based scoring without executing the file.
           </p>
 
           {/* Email file notice */}
@@ -130,7 +130,7 @@ export default function FileUpload() {
           }}>
             <span style={{ fontSize: '16px', flexShrink: 0 }}>✉️</span>
             <p style={{ fontFamily: 'DM Sans', fontSize: '13px', color: textMuted, lineHeight: '1.55', margin: 0 }}>
-              <span style={{ color: warning, fontWeight: '600' }}>Analyzing a suspicious email?</span> Upload a saved email file (.eml) to scan its contents, attachments, and links for phishing and malware indicators.
+              <span style={{ color: warning, fontWeight: '600' }}>Analyzing a suspicious email?</span> Upload a saved email file (.eml) to scan its headers, body text, and links for phishing and malware indicators.
             </p>
           </div>
         </div>
