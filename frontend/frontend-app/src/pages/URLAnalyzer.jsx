@@ -1,15 +1,9 @@
 import { scanURL } from '../services/api'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../utils/ThemeContext'
+import axios from 'axios'
 import Footer from '../components/Footer'
-
-const exampleHistory = [
-  { url: 'cdn.shortlink.ru/setup.exe', status: 'Malicious', color: '#C96B6B', bg: 'rgba(201,107,107,0.15)', border: 'rgba(201,107,107,0.3)' },
-  { url: 'updates.microsoft.com/patch...', status: 'Clean', color: '#5C9A73', bg: 'rgba(92,154,115,0.15)', border: 'rgba(92,154,115,0.3)' },
-  { url: 'bit.ly/3xR7pQ2', status: 'Suspicious', color: '#D49A4A', bg: 'rgba(212,154,74,0.15)', border: 'rgba(212,154,74,0.3)' },
-  { url: 'free-antivirus-download.net/app', status: 'Malicious', color: '#C96B6B', bg: 'rgba(201,107,107,0.15)', border: 'rgba(201,107,107,0.3)' },
-]
 
 const processingSteps = [
   { label: 'Fetching URL in sandbox', state: 'done' },
@@ -18,38 +12,77 @@ const processingSteps = [
   { label: 'Generating report', state: 'pending' },
 ]
 
+function getScoreColor(score, isDark) {
+  if (score >= 70) return isDark ? '#E89090' : '#C96B6B'
+  if (score >= 31) return isDark ? '#F0B76F' : '#D49A4A'
+  return isDark ? '#6FBF88' : '#5C9A73'
+}
+
+function getStatus(score) {
+  if (score >= 70) return 'MALICIOUS'
+  if (score >= 31) return 'WARNING'
+  return 'CLEAN'
+}
+
+function getBadgeStyle(status, isDark) {
+  if (status === 'MALICIOUS') return { color: isDark ? '#E89090' : '#C96B6B', background: isDark ? 'rgba(232,144,144,0.2)' : 'rgba(201,107,107,0.12)', border: '1px solid rgba(201,107,107,0.35)' }
+  if (status === 'WARNING')   return { color: isDark ? '#F0B76F' : '#D49A4A', background: isDark ? 'rgba(240,183,111,0.2)' : 'rgba(212,154,74,0.12)',  border: '1px solid rgba(212,154,74,0.35)'  }
+  return                             { color: isDark ? '#6FBF88' : '#5C9A73', background: isDark ? 'rgba(111,191,136,0.2)' : 'rgba(92,154,115,0.12)',  border: '1px solid rgba(92,154,115,0.35)'  }
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export default function URLAnalyzer() {
   const [pageState, setPageState] = useState('default')
   const [url, setUrl] = useState('')
+  const [recentScans, setRecentScans] = useState([])
+  const [loadingScans, setLoadingScans] = useState(true)
   const navigate = useNavigate()
   const { isDark } = useTheme()
 
-  const bg = isDark ? '#1A2520' : '#F5F5F0'
-  const surface = isDark ? '#243530' : '#FFFFFF'
+  const bg       = isDark ? '#1A2520' : '#F5F5F0'
+  const surface  = isDark ? '#243530' : '#FFFFFF'
   const surface2 = isDark ? '#2C3E38' : '#FAFAF8'
-  const border = isDark ? '#3A4A42' : '#D4D9CE'
+  const border   = isDark ? '#3A4A42' : '#D4D9CE'
   const borderDim = isDark ? '#323E39' : '#E0DBCE'
-  const text = isDark ? '#E8EDE9' : '#2C3E35'
+  const text     = isDark ? '#E8EDE9' : '#2C3E35'
   const textMuted = isDark ? '#9FACA3' : '#5A6B5C'
   const textFaint = isDark ? '#6B7B70' : '#8B9C8D'
-  const inputBg = isDark ? '#2C3E38' : '#FAFAF8'
+  const inputBg  = isDark ? '#2C3E38' : '#FAFAF8'
   const inputText = isDark ? '#E8EDE9' : '#2C3E35'
-  const teal = isDark ? '#5FA5A5' : '#4A8B8B'
-  const warning = isDark ? '#F0B76F' : '#D49A4A'
-  const danger = isDark ? '#E89090' : '#C96B6B'
-  const success = isDark ? '#6FBF88' : '#5C9A73'
+  const primary  = isDark ? '#6FBF88' : '#5C9A73'
+  const warning  = isDark ? '#F0B76F' : '#D49A4A'
+  const danger   = isDark ? '#E89090' : '#C96B6B'
+  const success  = isDark ? '#6FBF88' : '#5C9A73'
+  const rowHover = isDark ? '#2C3E38' : '#F0EDE6'
+
+  useEffect(() => {
+    const fetchRecent = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/results/recent?limit=20')
+        const urlScans = (res.data.scans || []).filter(s => s.source_method === 'url')
+        setRecentScans(urlScans)
+      } catch (err) {
+        setRecentScans([])
+      } finally {
+        setLoadingScans(false)
+      }
+    }
+    fetchRecent()
+  }, [])
 
   const handleScan = async () => {
     if (!url.trim()) return
-    if (!url.startsWith('http')) {
-      setPageState('error')
-      return
-    }
+    if (!url.startsWith('http')) { setPageState('error'); return }
     setPageState('processing')
     try {
       const response = await scanURL(url)
       const data = response.data
-
       navigate('/results', {
         state: {
           filename: data.filename || 'URL Analysis',
@@ -61,13 +94,10 @@ export default function URLAnalyzer() {
           sha256: data.sha256 || '—',
           scanTime: `${data.analysis_time_seconds || 0}s`,
           scanned: new Date().toLocaleString(),
-
           indicators: data.indicators,
           rawIndicators: data.indicators,
-
           reasons: data.reasons || [],
           suspicious_indicators: data.reasons || [],
-
           severity: data.severity,
           explanation: data.explanation,
         }
@@ -75,6 +105,58 @@ export default function URLAnalyzer() {
     } catch (err) {
       setPageState('error')
     }
+  }
+
+  const handleRowClick = async (scan) => {
+    const score = Math.round((scan.malicious_score || 0) * 100)
+    if (scan.scan_id) {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/results/${scan.scan_id}`)
+        const data = res.data
+        const fullScan = data.scan || {}
+        const indicatorList = data.indicators || []
+        const reasons = data.reasons || []
+        const indicators = {}
+        indicatorList.forEach(ind => {
+          const type = ind.indicator_type
+          if (!indicators[type]) indicators[type] = []
+          const val = ind.indicator_value
+          indicators[type].push(typeof val === 'object' ? val.value || JSON.stringify(val) : val)
+        })
+        navigate('/results', {
+          state: {
+            filename: fullScan.filename || scan.filename,
+            meta: `${formatBytes(fullScan.file_size_bytes || scan.file_size_bytes)} · ${fullScan.file_type || scan.file_type || 'Unknown'} · URL`,
+            score: Math.round((fullScan.malicious_score || 0) * 100),
+            file_type: fullScan.file_type || scan.file_type,
+            file_size: formatBytes(fullScan.file_size_bytes || scan.file_size_bytes),
+            md5: fullScan.md5 || '—',
+            sha256: fullScan.sha256 || '—',
+            scan_time: fullScan.analysis_duration_seconds ? `${fullScan.analysis_duration_seconds.toFixed(2)}s` : '—',
+            scanned: scan.upload_timestamp && scan.upload_timestamp !== 'mock_timestamp'
+              ? new Date(scan.upload_timestamp).toLocaleString() : '—',
+            indicators,
+            reasons,
+            suspicious_indicators: reasons,
+          },
+        })
+        return
+      } catch (err) {
+        console.error('Failed to fetch full scan:', err)
+      }
+    }
+    navigate('/results', {
+      state: {
+        filename: scan.filename,
+        meta: `${formatBytes(scan.file_size_bytes)} · URL`,
+        score,
+        file_type: scan.file_type,
+        file_size: formatBytes(scan.file_size_bytes),
+        indicators: {},
+        reasons: [],
+        suspicious_indicators: [],
+      },
+    })
   }
 
   const stepColor = (state) => {
@@ -91,27 +173,25 @@ export default function URLAnalyzer() {
         <div style={{ display: 'flex', gap: '8px', marginBottom: '32px', fontFamily: 'Space Mono', fontSize: '11px' }}>
           <span style={{ color: textMuted, cursor: 'pointer' }} onClick={() => navigate('/')}>Home</span>
           <span style={{ color: textFaint }}>/</span>
-          <span style={{ color: teal }}>URL Analysis</span>
+          <span style={{ color: primary }}>URL Analysis</span>
         </div>
 
         {/* Centered Header */}
         <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 60px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${teal}20`, border: `1px solid ${teal}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🔗</div>
-            <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: teal, letterSpacing: '0.12em', fontWeight: '600' }}>URL ANALYSIS</span>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${primary}20`, border: `1px solid ${primary}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🔗</div>
+            <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: primary, letterSpacing: '0.12em', fontWeight: '600' }}>URL ANALYSIS</span>
           </div>
-
           <h1 style={{ fontFamily: 'Space Mono', fontSize: '42px', fontWeight: '700', color: text, lineHeight: '1.2', marginBottom: '16px', letterSpacing: '-0.01em' }}>
             Analyze Suspicious URLs
           </h1>
-
           <p style={{ fontFamily: 'DM Sans', fontSize: '16px', color: textMuted, lineHeight: '1.7', maxWidth: '600px', margin: '0 auto' }}>
             Paste a link to a remote file or webpage. We fetch and analyze it inside a fully isolated sandbox — nothing ever touches your machine.
           </p>
         </div>
 
         {/* Two column layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', maxWidth: '1200px', margin: '0 auto 40px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', maxWidth: '1200px', margin: '0 auto 48px' }}>
 
           {/* Left: input panel */}
           <div style={{ background: surface, border: `1px solid ${pageState === 'error' ? danger : border}`, borderRadius: '14px', padding: '32px' }}>
@@ -143,7 +223,7 @@ export default function URLAnalyzer() {
                   fontFamily: 'DM Sans', fontSize: '12px', fontWeight: '600',
                   padding: '14px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                   letterSpacing: '0.03em',
-                  background: pageState === 'error' ? `${danger}20` : pageState === 'processing' ? border : teal,
+                  background: pageState === 'error' ? `${danger}20` : pageState === 'processing' ? border : primary,
                   color: pageState === 'error' ? danger : pageState === 'processing' ? textFaint : '#FFFFFF',
                 }}
               >
@@ -185,24 +265,66 @@ export default function URLAnalyzer() {
             )}
           </div>
 
-          {/* Right: example history */}
+          {/* Right: example history — replaced with live recent URL scans */}
           <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: '14px', padding: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: textFaint, letterSpacing: '0.12em', fontWeight: '600' }}>EXAMPLE SCAN HISTORY</span>
+              <span style={{ fontFamily: 'Space Mono', fontSize: '11px', color: textFaint, letterSpacing: '0.12em', fontWeight: '600' }}>RECENT URL SCANS</span>
               <div style={{ flex: 1, height: '1px', background: border }} />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {exampleHistory.map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: surface2, borderRadius: '8px', padding: '14px 18px' }}>
-                  <span style={{ fontFamily: 'DM Sans', fontSize: '12px', color: textMuted }}>{item.url}</span>
-                  <span style={{ fontFamily: 'DM Sans', fontSize: '10px', fontWeight: '700', color: item.color, background: item.bg, border: `1px solid ${item.border}`, borderRadius: '100px', padding: '4px 14px' }}>{item.status}</span>
-                </div>
-              ))}
-            </div>
+
+            {loadingScans && (
+              <div style={{ textAlign: 'center', padding: '24px', fontFamily: 'DM Sans', fontSize: '13px', color: textFaint }}>
+                Loading...
+              </div>
+            )}
+
+            {!loadingScans && recentScans.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '24px', fontFamily: 'DM Sans', fontSize: '13px', color: textFaint }}>
+                No recent URL scans found
+              </div>
+            )}
+
+            {!loadingScans && recentScans.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {recentScans.map((scan, i) => {
+                  const score = Math.round((scan.malicious_score || 0) * 100)
+                  const status = getStatus(score)
+                  return (
+                    <div
+                      key={scan.scan_id || i}
+                      onClick={() => handleRowClick(scan)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        background: surface2, borderRadius: '8px', padding: '12px 16px',
+                        cursor: 'pointer', transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = rowHover}
+                      onMouseLeave={e => e.currentTarget.style.background = surface2}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: 'DM Sans', fontSize: '12px', fontWeight: '500', color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {scan.filename}
+                        </div>
+                        <div style={{ fontFamily: 'Space Mono', fontSize: '10px', color: getScoreColor(score, isDark), marginTop: '2px' }}>
+                          Score: {score}
+                        </div>
+                      </div>
+                      <span style={{
+                        fontFamily: 'DM Sans', fontSize: '10px', fontWeight: '700',
+                        padding: '3px 12px', borderRadius: '100px', marginLeft: '12px', flexShrink: 0,
+                        ...getBadgeStyle(status, isDark)
+                      }}>
+                        {status}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
+      </div>
       <Footer />
     </div>
   )

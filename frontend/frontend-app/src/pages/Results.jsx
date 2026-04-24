@@ -280,6 +280,25 @@ export default function Results() {
                 </div>
               ))}
 
+              {/* Image file notice */}
+              {['.png', '.jpg', '.pdf'].includes((result.fileType || result.file_type || '').toLowerCase()) && (
+                <div style={{
+                  background: isDark ? 'rgba(240,183,111,0.08)' : 'rgba(212,154,74,0.08)',
+                  border: `1px solid ${isDark ? 'rgba(240,183,111,0.3)' : 'rgba(212,154,74,0.3)'}`,
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  marginTop: '16px',
+                  marginBottom: '8px',
+                }}>
+                  <div style={{ fontFamily: 'DM Sans', fontSize: '12px', fontWeight: '700', color: isDark ? '#F0B76F' : '#D49A4A', marginBottom: '4px' }}>
+                    ⚠️ Image File Detected
+                  </div>
+                  <div style={{ fontFamily: 'DM Sans', fontSize: '12px', color: textMuted, lineHeight: '1.55' }}>
+                    For image files, the threat score may be low because analysis depends on text extraction via OCR. Review the <strong>Extracted Text / OCR Output</strong> section for the full picture.
+                  </div>
+                </div>
+              )}
+
               <div style={{ marginTop: '24px' }}>
                 <span onClick={() => navigate('/')} style={{ fontFamily: 'DM Sans', fontSize: '12px', fontWeight: '600', color: accent, cursor: 'pointer' }}>
                   Run new scan →

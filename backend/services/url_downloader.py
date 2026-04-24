@@ -106,7 +106,13 @@ class URLDownloader:
                 # Guess extension from content-type
                 content_type = response.headers.get('content-type', '')
                 ext = self._guess_extension(content_type)
-                original_filename = f"download{ext}"
+                original_filename = os.path.basename(urlparse(url).path)
+                if not original_filename or '.' not in original_filename:
+                    # Use domain name as filename instead of generic "download"
+                    content_type = response.headers.get('content-type', '')
+                    ext = self._guess_extension(content_type)
+                    domain = urlparse(url).netloc.replace('www.', '')
+                    original_filename = f"{domain}{ext}"
             
             unique_filename = f"{uuid.uuid4()}_{original_filename}"
             file_path = os.path.join(self.download_dir, unique_filename)
@@ -176,6 +182,7 @@ class URLDownloader:
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
             'application/msword': '.doc',
             'text/plain': '.txt',
+            'text/html': '.html',
             'image/png': '.png',
             'image/jpeg': '.jpg',
         }

@@ -12,7 +12,7 @@ const analysisTypes = [
     desc: 'Submit any URL for behavioral analysis and threat intelligence lookup in an isolated sandbox.',
     cta: 'Analyze URL',
     path: '/url',
-    accent: '#4A8B8B',
+    accent: '#5C8A5C',
     accentLight: 'rgba(74,139,139,0.12)',
   },
   {
